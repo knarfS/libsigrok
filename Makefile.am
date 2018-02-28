@@ -363,6 +363,12 @@ src_libdrivers_la_SOURCES += \
 	src/hardware/hantek-4032l/protocol.c \
 	src/hardware/hantek-4032l/api.c
 endif
+if HW_HANTEK_5XXXB
+src_libdrivers_la_SOURCES += \
+	src/hardware/hantek-5xxxb/protocol.h \
+	src/hardware/hantek-5xxxb/protocol.c \
+	src/hardware/hantek-5xxxb/api.c
+endif
 if HW_HANTEK_6XXX
 src_libdrivers_la_SOURCES += \
 	src/hardware/hantek-6xxx/protocol.h \
