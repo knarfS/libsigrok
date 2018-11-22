@@ -26,9 +26,11 @@
 #ifndef LIBSIGROK_LIBSIGROK_INTERNAL_H
 #define LIBSIGROK_LIBSIGROK_INTERNAL_H
 
+#include <glib.h>
+#include <gio/gio.h>
+
 #include <stdarg.h>
 #include <stdio.h>
-#include <glib.h>
 #ifdef HAVE_LIBUSB_1_0
 #include <libusb.h>
 #endif
@@ -1163,6 +1165,17 @@ SR_PRIV int sr_modbus_write_multiple_registers(struct sr_modbus_dev_inst*modbus,
                                                uint16_t *registers);
 SR_PRIV int sr_modbus_close(struct sr_modbus_dev_inst *modbus);
 SR_PRIV void sr_modbus_free(struct sr_modbus_dev_inst *modbus);
+
+/*--- scpi/scpi_libgpib.c ---------------------------------------------------*/
+
+#ifdef HAVE_LIBGPIB
+SR_PRIV void scpi_gpib_waitsrq_async(void *priv,
+									GCancellable *cancellable,
+									GAsyncReadyCallback callback,
+									gpointer user_data);
+SR_PRIV int scpi_gpib_waitsrq_finish(GAsyncResult *result, GError **error);
+#endif
+
 
 /*--- hardware/dmm/es519xx.c ------------------------------------------------*/
 

@@ -159,5 +159,7 @@ SR_PRIV int hp_3478a_set_mq(const struct sr_dev_inst *sdi, enum sr_mq mq,
 				enum sr_mqflag mq_flags);
 SR_PRIV int hp_3478a_get_status_bytes(const struct sr_dev_inst *sdi);
 SR_PRIV int hp_3478a_receive_data(int fd, int revents, void *cb_data);
+SR_PRIV void hp_3478a_receive_data2(GObject *source_object, GAsyncResult *res,
+								   gpointer cb_data);
 
 #endif

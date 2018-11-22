@@ -227,8 +227,21 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 	/* Get device status. */
 	hp_3478a_get_status_bytes(sdi);
 
+	/*
 	return sr_scpi_source_add(sdi->session, scpi, G_IO_IN, 100,
 			hp_3478a_receive_data, (void *)sdi);
+	*/
+
+	// Clear Status Register and set SRQ mask for "data ready"
+	sr_scpi_send(scpi, "KM01");
+
+	/*
+	void scpi_gpib_waitsrq_async (void *priv, GCancellable *cancellable,
+		GAsyncReadyCallback callback, gpointer user_data)
+	*/
+	scpi_gpib_waitsrq_async(scpi->priv, NULL, hp_3478a_receive_data2, (void *)sdi);
+
+	return SR_OK; // TODO
 }
 
 static int dev_acquisition_stop(struct sr_dev_inst *sdi)

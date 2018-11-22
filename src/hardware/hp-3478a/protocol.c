@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gio/gio.h>
+#include <gobject/gobject.h>
+
 #include <config.h>
 #include <math.h>
 #include <stdlib.h>
@@ -437,4 +440,51 @@ SR_PRIV int hp_3478a_receive_data(int fd, int revents, void *cb_data)
 		sr_dev_acquisition_stop(sdi);
 
 	return TRUE;
+}
+
+SR_PRIV void hp_3478a_receive_data2(GObject *source_object, GAsyncResult *res,
+									gpointer cb_data)
+{
+	struct sr_scpi_dev_inst *scpi;
+	struct sr_dev_inst *sdi;
+	struct dev_context *devc;
+	int status_register;
+
+	(void)source_object;
+	(void)res;
+
+	if (!(sdi = cb_data) || !(devc = sdi->priv))
+		//return TRUE;
+		return;
+
+	scpi = sdi->conn;
+
+	sr_spew("hp_3478a_receive_data2(): called!");
+
+	status_register = scpi_gpib_waitsrq_finish(res, NULL);
+	sr_spew("hp_3478a_receive_data2(): status_register = %i", status_register);
+	if ((status_register & 0x00) == 0) {
+		sr_spew("hp_3478a_receive_data2(): Data Ready not set!");
+		//return FALSE;
+		return;
+	}
+
+	if (sr_scpi_get_double(scpi, NULL, &devc->measurement) != SR_OK) {
+		sr_spew("hp_3478a_receive_data2(): sr_scpi_get_double() failed!");
+		//return FALSE;
+		return;
+	}
+	// This is necessary to get the actual range for the encoding digits.
+	if (hp_3478a_get_status_bytes(sdi) != SR_OK)
+		//return FALSE;
+		return;
+
+	acq_send_measurement(sdi);
+	sr_sw_limits_update_samples_read(&devc->limits, 1);
+
+	if (sr_sw_limits_check(&devc->limits))
+		sr_dev_acquisition_stop(sdi);
+
+	//return TRUE;
+	return;
 }
