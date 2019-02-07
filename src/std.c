@@ -798,6 +798,24 @@ SR_PRIV GVariant *std_gvar_thresholds(const double a[][2], unsigned int n)
 	return g_variant_builder_end(&gvb);
 }
 
+SR_PRIV GVariant *std_gvar_measured_quantities(const mqmqf mqopts[])
+{
+	unsigned int i;
+	GVariant *gvar, *arr[2];
+	GVariantBuilder gvb;
+
+	g_variant_builder_init(&gvb, G_VARIANT_TYPE_ARRAY);
+
+	for (i = 0; i < ARRAY_SIZE(mqopts); i++) {
+		arr[0] = g_variant_new_uint32(mqopts[i].mq);
+		arr[1] = g_variant_new_uint64(mqopts[i].mqflag);
+		gvar = g_variant_new_tuple(arr, 2);
+		g_variant_builder_add_value(&gvb, gvar);
+	}
+
+	return g_variant_builder_end(&gvb);
+}
+
 /* Return the index of 'data' in the array 'arr' (or -1). */
 static int find_in_array(GVariant *data, const GVariantType *type,
 			 const void *arr, unsigned int n)
