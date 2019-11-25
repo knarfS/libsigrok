@@ -501,6 +501,7 @@ static int hp_6630a_update_status(const struct sr_dev_inst *sdi)
 	struct sr_scpi_dev_inst *scpi;
 	int ret;
 	int fault;
+	struct sr_channel_group *channel_group;
 	gboolean cv, cc_pos, unreg, cc_neg;
 	gboolean regulation_changed;
 	char *regulation;
@@ -519,20 +520,23 @@ static int hp_6630a_update_status(const struct sr_dev_inst *sdi)
 	if (ret != SR_OK)
 		return ret;
 
+	// TODO: Is there a better way to get the channel group?
+	channel_group  = g_slist_nth_data(sdi->channel_groups, 0);
+
 	/* OVP */
 	if (fault & (1 << 3))
 		sr_session_send_meta(sdi, SR_CONF_OVER_VOLTAGE_PROTECTION_ACTIVE,
-			g_variant_new_boolean(fault & (1 << 3)));
+			g_variant_new_boolean(fault & (1 << 3)), channel_group);
 
 	/* OCP */
 	if (fault & (1 << 6))
 		sr_session_send_meta(sdi, SR_CONF_OVER_CURRENT_PROTECTION_ACTIVE,
-			g_variant_new_boolean(fault & (1 << 6)));
+			g_variant_new_boolean(fault & (1 << 6)), channel_group);
 
 	/* OTP */
 	if (fault & (1 << 4))
 		sr_session_send_meta(sdi, SR_CONF_OVER_TEMPERATURE_PROTECTION_ACTIVE,
-			g_variant_new_boolean(fault & (1 << 4)));
+			g_variant_new_boolean(fault & (1 << 4)), channel_group);
 
 	/* CV */
 	cv = (fault & (1 << 0));
@@ -565,7 +569,7 @@ static int hp_6630a_update_status(const struct sr_dev_inst *sdi)
 			return FALSE;
 		}
 		sr_session_send_meta(sdi, SR_CONF_REGULATION,
-			g_variant_new_string(regulation));
+			g_variant_new_string(regulation), channel_group);
 	}
 
 	return SR_OK;
@@ -708,6 +712,7 @@ static int hp_6630b_update_status(const struct sr_dev_inst *sdi)
 	struct sr_scpi_dev_inst *scpi;
 	int ret;
 	int stb;
+	struct sr_channel_group *channel_group;
 	int ques_even, ques_cond;
 	int oper_even, oper_cond;
 	gboolean output_enabled;
@@ -745,6 +750,9 @@ static int hp_6630b_update_status(const struct sr_dev_inst *sdi)
 	}
 #endif
 
+	// TODO: Is there a better way to get the channel group?
+	channel_group  = g_slist_nth_data(sdi->channel_groups, 0);
+
 	/* Questionable status summary bit */
 	if (stb & (1 << 3)) {
 		/* Read the event register to clear it! */
@@ -759,17 +767,17 @@ static int hp_6630b_update_status(const struct sr_dev_inst *sdi)
 		/* OVP */
 		if (ques_even & (1 << 0))
 			sr_session_send_meta(sdi, SR_CONF_OVER_VOLTAGE_PROTECTION_ACTIVE,
-				g_variant_new_boolean(ques_cond & (1 << 0)));
+				g_variant_new_boolean(ques_cond & (1 << 0)), channel_group);
 
 		/* OCP */
 		if (ques_even & (1 << 1))
 			sr_session_send_meta(sdi, SR_CONF_OVER_CURRENT_PROTECTION_ACTIVE,
-				g_variant_new_boolean(ques_cond & (1 << 1)));
+				g_variant_new_boolean(ques_cond & (1 << 1)), channel_group);
 
 		/* OTP */
 		if (ques_even & (1 << 4))
 			sr_session_send_meta(sdi, SR_CONF_OVER_TEMPERATURE_PROTECTION_ACTIVE,
-				g_variant_new_boolean(ques_cond & (1 << 4)));
+				g_variant_new_boolean(ques_cond & (1 << 4)), channel_group);
 
 		/* UNREG */
 		unreg = (ques_cond & (1 << 10));
@@ -785,7 +793,7 @@ static int hp_6630b_update_status(const struct sr_dev_inst *sdi)
 		if (ret != SR_OK)
 			return ret;
 		sr_session_send_meta(sdi, SR_CONF_ENABLED,
-			g_variant_new_boolean(output_enabled));
+			g_variant_new_boolean(output_enabled), channel_group);
 	}
 
 	/* Operation status summary bit */
@@ -830,7 +838,7 @@ static int hp_6630b_update_status(const struct sr_dev_inst *sdi)
 			return FALSE;
 		}
 		sr_session_send_meta(sdi, SR_CONF_REGULATION,
-			g_variant_new_string(regulation));
+			g_variant_new_string(regulation), channel_group);
 	}
 
 	return SR_OK;

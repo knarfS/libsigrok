@@ -1077,6 +1077,8 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
  * @param sdi The device instance to send the package from. Must not be NULL.
  * @param key The config key to send to the session bus.
  * @param var The value to send to the session bus.
+ * @param channel_group The channel group the config key belomgs to. NULL if
+ *                      the config key belongs to the device itself.
  *
  * @retval SR_OK Success.
  * @retval SR_ERR_ARG Invalid argument.
@@ -1084,7 +1086,8 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
  * @private
  */
 SR_PRIV int sr_session_send_meta(const struct sr_dev_inst *sdi,
-		uint32_t key, GVariant *var)
+		uint32_t key, GVariant *var,
+		const struct sr_channel_group *channel_group)
 {
 	struct sr_config *cfg;
 	struct sr_datafeed_packet packet;
@@ -1098,10 +1101,10 @@ SR_PRIV int sr_session_send_meta(const struct sr_dev_inst *sdi,
 	packet.type = SR_DF_META;
 	packet.payload = &meta;
 
-	meta.config = g_slist_append(NULL, cfg);
+	meta.config = cfg;
+	meta.channel_group = channel_group;
 
 	ret = sr_session_send(sdi, &packet);
-	g_slist_free(meta.config);
 	sr_config_free(cfg);
 
 	return ret;
@@ -1482,8 +1485,7 @@ SR_PRIV int sr_session_source_destroyed(struct sr_session *session,
 static void copy_src(struct sr_config *src, struct sr_datafeed_meta *meta_copy)
 {
 	g_variant_ref(src->data);
-	meta_copy->config = g_slist_append(meta_copy->config,
-	                                   g_memdup(src, sizeof(struct sr_config)));
+	meta_copy->config = g_memdup(src, sizeof(struct sr_config));
 }
 
 SR_API int sr_packet_copy(const struct sr_datafeed_packet *packet,
@@ -1513,7 +1515,10 @@ SR_API int sr_packet_copy(const struct sr_datafeed_packet *packet,
 	case SR_DF_META:
 		meta = packet->payload;
 		meta_copy = g_malloc0(sizeof(struct sr_datafeed_meta));
-		g_slist_foreach(meta->config, (GFunc)copy_src, meta_copy->config);
+		copy_src(meta->config, meta_copy);
+		// TODO: When is this even called? Is the copy done right?
+		meta_copy->channel_group = g_memdup(meta->channel_group,
+				sizeof(struct sr_channel_group));
 		(*copy)->payload = meta_copy;
 		break;
 	case SR_DF_LOGIC:
@@ -1563,7 +1568,6 @@ SR_API void sr_packet_free(struct sr_datafeed_packet *packet)
 	const struct sr_datafeed_logic *logic;
 	const struct sr_datafeed_analog *analog;
 	struct sr_config *src;
-	GSList *l;
 
 	switch (packet->type) {
 	case SR_DF_TRIGGER:
@@ -1576,12 +1580,9 @@ SR_API void sr_packet_free(struct sr_datafeed_packet *packet)
 		break;
 	case SR_DF_META:
 		meta = packet->payload;
-		for (l = meta->config; l; l = l->next) {
-			src = l->data;
-			g_variant_unref(src->data);
-			g_free(src);
-		}
-		g_slist_free(meta->config);
+		src = meta->config;
+		g_variant_unref(src->data);
+		g_free(src);
 		g_free((void *)packet->payload);
 		break;
 	case SR_DF_LOGIC:

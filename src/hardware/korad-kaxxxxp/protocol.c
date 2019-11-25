@@ -331,6 +331,7 @@ SR_PRIV int korad_kaxxxxp_receive_data(int fd, int revents, void *cb_data)
 	struct sr_analog_encoding encoding;
 	struct sr_analog_meaning meaning;
 	struct sr_analog_spec spec;
+	struct sr_channel_group *channel_group;
 	GSList *l;
 
 	(void)fd;
@@ -377,29 +378,34 @@ SR_PRIV int korad_kaxxxxp_receive_data(int fd, int revents, void *cb_data)
 		sr_session_send(sdi, &packet);
 		sr_sw_limits_update_samples_read(&devc->limits, 1);
 	} else if (devc->acquisition_target == KAXXXXP_STATUS) {
+		// TODO: Is there a better way to get the channel group?
+		// TODO: Check if a channel group is in sdi->channel_groups?
+		channel_group  = g_slist_nth_data(sdi->channel_groups, 0);
 		if (devc->cc_mode_1_changed) {
 			sr_session_send_meta(sdi, SR_CONF_REGULATION,
-				g_variant_new_string((devc->cc_mode[0]) ? "CC" : "CV"));
+				g_variant_new_string((devc->cc_mode[0]) ? "CC" : "CV"),
+				channel_group);
 			devc->cc_mode_1_changed = FALSE;
 		}
 		if (devc->cc_mode_2_changed) {
 			sr_session_send_meta(sdi, SR_CONF_REGULATION,
-				g_variant_new_string((devc->cc_mode[1]) ? "CC" : "CV"));
+				g_variant_new_string((devc->cc_mode[1]) ? "CC" : "CV"),
+				channel_group);
 			devc->cc_mode_2_changed = FALSE;
 		}
 		if (devc->output_enabled_changed) {
 			sr_session_send_meta(sdi, SR_CONF_ENABLED,
-				g_variant_new_boolean(devc->output_enabled));
+				g_variant_new_boolean(devc->output_enabled), channel_group);
 			devc->output_enabled_changed = FALSE;
 		}
 		if (devc->ocp_enabled_changed) {
 			sr_session_send_meta(sdi, SR_CONF_OVER_CURRENT_PROTECTION_ENABLED,
-				g_variant_new_boolean(devc->ocp_enabled));
+				g_variant_new_boolean(devc->ocp_enabled), channel_group);
 			devc->ocp_enabled_changed = FALSE;
 		}
 		if (devc->ovp_enabled_changed) {
 			sr_session_send_meta(sdi, SR_CONF_OVER_VOLTAGE_PROTECTION_ENABLED,
-				g_variant_new_boolean(devc->ovp_enabled));
+				g_variant_new_boolean(devc->ovp_enabled), channel_group);
 			devc->ovp_enabled_changed = FALSE;
 		}
 	}

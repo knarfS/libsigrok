@@ -267,6 +267,7 @@ SR_PRIV int reloadpro_get_voltage_current(const struct sr_dev_inst *sdi,
 
 static void handle_packet(const struct sr_dev_inst *sdi)
 {
+	struct sr_channel_group *channel_group;
 	struct sr_datafeed_packet packet;
 	struct sr_datafeed_analog analog;
 	struct sr_analog_encoding encoding;
@@ -278,11 +279,14 @@ static void handle_packet(const struct sr_dev_inst *sdi)
 
 	devc = sdi->priv;
 
+	// TODO: Is there a better way to get the channel group?
+	channel_group  = g_slist_nth_data(sdi->channel_groups, 0);
+
 	if (g_str_has_prefix((const char *)devc->buf, "overtemp")) {
 		sr_warn("Overtemperature condition!");
 		devc->otp_active = TRUE;
 		sr_session_send_meta(sdi, SR_CONF_OVER_TEMPERATURE_PROTECTION_ACTIVE,
-			g_variant_new_boolean(TRUE));
+			g_variant_new_boolean(TRUE), channel_group);
 		return;
 	}
 
@@ -290,7 +294,7 @@ static void handle_packet(const struct sr_dev_inst *sdi)
 		sr_warn("Undervoltage condition!");
 		devc->uvc_active = TRUE;
 		sr_session_send_meta(sdi, SR_CONF_UNDER_VOLTAGE_CONDITION_ACTIVE,
-			g_variant_new_boolean(TRUE));
+			g_variant_new_boolean(TRUE), channel_group);
 		return;
 	}
 
@@ -305,7 +309,7 @@ static void handle_packet(const struct sr_dev_inst *sdi)
 		g_strfreev(tokens);
 		g_cond_signal(&devc->current_limit_cond);
 		sr_session_send_meta(sdi, SR_CONF_CURRENT_LIMIT,
-			g_variant_new_double(devc->current_limit));
+			g_variant_new_double(devc->current_limit), channel_group);
 		return;
 	}
 
@@ -316,13 +320,13 @@ static void handle_packet(const struct sr_dev_inst *sdi)
 		g_cond_signal(&devc->uvc_threshold_cond);
 		if (devc->uvc_threshold == .0) {
 			sr_session_send_meta(sdi, SR_CONF_UNDER_VOLTAGE_CONDITION,
-				g_variant_new_boolean(FALSE));
+				g_variant_new_boolean(FALSE), channel_group);
 		} else {
 			sr_session_send_meta(sdi, SR_CONF_UNDER_VOLTAGE_CONDITION,
-				g_variant_new_boolean(TRUE));
+				g_variant_new_boolean(TRUE), channel_group);
 			sr_session_send_meta(sdi,
 				SR_CONF_UNDER_VOLTAGE_CONDITION_THRESHOLD,
-				g_variant_new_double(devc->uvc_threshold));
+				g_variant_new_double(devc->uvc_threshold), channel_group);
 		}
 		return;
 	}

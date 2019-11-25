@@ -120,6 +120,7 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 	struct sr_dev_inst *sdi;
 	struct dev_context *devc;
 	struct sr_modbus_dev_inst *modbus;
+	struct sr_channel_group *channel_group;
 	struct sr_datafeed_packet packet;
 	uint16_t registers[8];
 	int ret;
@@ -142,6 +143,10 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 	g_mutex_unlock(&devc->rw_mutex);
 
 	if (ret == SR_OK) {
+		// TODO: Is there a better way to get the channel group?
+		// TODO: Check if a channel group is in sdi->channel_groups?
+		channel_group  = g_slist_nth_data(sdi->channel_groups, 0);
+
 		/* Send channel values */
 		packet.type = SR_DF_FRAME_BEGIN;
 		sr_session_send(sdi, &packet);
@@ -165,23 +170,25 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 		if (devc->actual_ovp_state != (RB16(registers + 5) == STATE_OVP)) {
 			devc->actual_ovp_state = RB16(registers + 5) == STATE_OVP;
 			sr_session_send_meta(sdi, SR_CONF_OVER_VOLTAGE_PROTECTION_ACTIVE,
-				g_variant_new_boolean(devc->actual_ovp_state));
+				g_variant_new_boolean(devc->actual_ovp_state), channel_group);
 		}
 		if (devc->actual_ocp_state != (RB16(registers + 5) == STATE_OCP)) {
 			devc->actual_ocp_state = RB16(registers + 5) == STATE_OCP;
 			sr_session_send_meta(sdi, SR_CONF_OVER_CURRENT_PROTECTION_ACTIVE,
-				g_variant_new_boolean(devc->actual_ocp_state));
+				g_variant_new_boolean(devc->actual_ocp_state), channel_group);
 		}
 		if (devc->actual_regulation_state != RB16(registers + 6)) {
 			devc->actual_regulation_state = RB16(registers + 6);
 			sr_session_send_meta(sdi, SR_CONF_REGULATION,
 				g_variant_new_string(
-					devc->actual_regulation_state == MODE_CC ? "CC" : "CV"));
+					devc->actual_regulation_state == MODE_CC ? "CC" : "CV"),
+				channel_group);
 		}
 		if (devc->actual_output_state != RB16(registers + 7)) {
 			devc->actual_output_state = RB16(registers + 7);
 			sr_session_send_meta(sdi, SR_CONF_ENABLED,
-				g_variant_new_boolean(devc->actual_output_state));
+				g_variant_new_boolean(devc->actual_output_state),
+				channel_group);
 		}
 
 		sr_sw_limits_update_samples_read(&devc->limits, 1);

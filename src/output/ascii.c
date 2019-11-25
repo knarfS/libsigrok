@@ -144,7 +144,6 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 	const struct sr_datafeed_meta *meta;
 	const struct sr_datafeed_logic *logic;
 	const struct sr_config *src;
-	GSList *l;
 	struct context *ctx;
 	int idx, offset, curbit, prevbit;
 	uint64_t i, j;
@@ -160,12 +159,9 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 	switch (packet->type) {
 	case SR_DF_META:
 		meta = packet->payload;
-		for (l = meta->config; l; l = l->next) {
-			src = l->data;
-			if (src->key != SR_CONF_SAMPLERATE)
-				continue;
+		src = meta->config;
+		if (src->key == SR_CONF_SAMPLERATE)
 			ctx->samplerate = g_variant_get_uint64(src->data);
-		}
 		break;
 	case SR_DF_TRIGGER:
 		ctx->trigger = ctx->spl_cnt;

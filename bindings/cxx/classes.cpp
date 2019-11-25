@@ -301,21 +301,24 @@ shared_ptr<Packet> Context::create_header_packet(Glib::TimeVal start_time)
 }
 
 shared_ptr<Packet> Context::create_meta_packet(
-	map<const ConfigKey *, Glib::VariantBase> config)
+	const ConfigKey *config_key, Glib::VariantBase value,
+	shared_ptr<Device> device, shared_ptr<Configurable> configurable)
 {
 	auto meta = g_new0(struct sr_datafeed_meta, 1);
-	for (const auto &input : config) {
-		const auto &key = input.first;
-		const auto &value = input.second;
-		auto *const output = g_new(struct sr_config, 1);
-		output->key = key->id();
-		output->data = value.gobj_copy();
-		meta->config = g_slist_append(meta->config, output);
-	}
+	auto *const config = g_new(struct sr_config, 1);
+	config->key = config_key->id();
+	config->data = value.gobj_copy();
+	meta->config = config;
+	if (configurable->config_channel_group != nullptr)
+		meta->channel_group = configurable->config_channel_group;
+	else
+		meta->channel_group = nullptr;
+
 	auto packet = g_new(struct sr_datafeed_packet, 1);
 	packet->type = SR_DF_META;
 	packet->payload = meta;
-	return shared_ptr<Packet>{new Packet{nullptr, packet},
+
+	return shared_ptr<Packet>{new Packet{device, packet},
 		default_delete<Packet>{}};
 }
 
@@ -614,6 +617,11 @@ Device::~Device()
 {
 }
 
+shared_ptr<Device> Device::get_shared_from_this()
+{
+	return static_pointer_cast<Device>(shared_from_this());
+}
+
 string Device::vendor() const
 {
 	return valid_string(sr_dev_inst_vendor_get(_structure));
@@ -687,11 +695,6 @@ HardwareDevice::~HardwareDevice()
 {
 }
 
-shared_ptr<Device> HardwareDevice::get_shared_from_this()
-{
-	return static_pointer_cast<Device>(shared_from_this());
-}
-
 shared_ptr<Driver> HardwareDevice::driver()
 {
 	return _driver;
@@ -705,11 +708,6 @@ UserDevice::UserDevice(string vendor, string model, string version) :
 
 UserDevice::~UserDevice()
 {
-}
-
-shared_ptr<Device> UserDevice::get_shared_from_this()
-{
-	return static_pointer_cast<Device>(shared_from_this());
 }
 
 shared_ptr<Channel> UserDevice::add_channel(unsigned int index,
@@ -919,11 +917,6 @@ SessionDevice::~SessionDevice()
 {
 }
 
-shared_ptr<Device> SessionDevice::get_shared_from_this()
-{
-	return static_pointer_cast<Device>(shared_from_this());
-}
-
 Session::Session(shared_ptr<Context> context) :
 	_structure(nullptr),
 	_context(move(context))
@@ -1093,7 +1086,7 @@ Packet::Packet(shared_ptr<Device> device,
 		case SR_DF_META:
 			_payload.reset(new Meta{
 				static_cast<const struct sr_datafeed_meta *>(
-					structure->payload)});
+					structure->payload), _device});
 			break;
 		case SR_DF_LOGIC:
 			_payload.reset(new Logic{
@@ -1161,9 +1154,11 @@ Glib::TimeVal Header::start_time() const
 		_structure->starttime.tv_usec);
 }
 
-Meta::Meta(const struct sr_datafeed_meta *structure) :
+Meta::Meta(const struct sr_datafeed_meta *structure,
+		   shared_ptr<Device> device) :
 	PacketPayload(),
-	_structure(structure)
+	_structure(structure),
+	_device(device)
 {
 }
 
@@ -1177,14 +1172,29 @@ shared_ptr<PacketPayload> Meta::share_owned_by(shared_ptr<Packet> _parent)
 		ParentOwned::share_owned_by(_parent));
 }
 
-map<const ConfigKey *, Glib::VariantBase> Meta::config() const
+const ConfigKey *Meta::config_key() const
 {
-	map<const ConfigKey *, Glib::VariantBase> result;
-	for (auto l = _structure->config; l; l = l->next) {
-		auto *const config = static_cast<struct sr_config *>(l->data);
-		result[ConfigKey::get(config->key)] = Glib::VariantBase(config->data, true);
+	return ConfigKey::get(_structure->config->key);
+}
+
+Glib::VariantBase Meta::value() const
+{
+	return Glib::VariantBase(_structure->config->data, true);
+}
+
+std::shared_ptr<Configurable> Meta::configurable() const
+{
+	if (_structure->channel_group) {
+		auto cg_map = _device->channel_groups();
+		for (auto it = cg_map.begin(); it != cg_map.end(); ++it) {
+			if (it->second->config_channel_group == _structure->channel_group)
+				return it->second;
+		}
 	}
-	return result;
+	else
+		return _device;
+
+	return nullptr;
 }
 
 Logic::Logic(const struct sr_datafeed_logic *structure) :
@@ -1502,11 +1512,6 @@ InputDevice::InputDevice(shared_ptr<Input> input,
 
 InputDevice::~InputDevice()
 {
-}
-
-shared_ptr<Device> InputDevice::get_shared_from_this()
-{
-	return static_pointer_cast<Device>(shared_from_this());
 }
 
 Option::Option(const struct sr_option *structure,

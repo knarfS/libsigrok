@@ -586,9 +586,6 @@ static gboolean have_header(GString *buf)
 
 static int process_buffer(struct sr_input *in)
 {
-	struct sr_datafeed_packet packet;
-	struct sr_datafeed_meta meta;
-	struct sr_config *src;
 	struct context *inc;
 	uint64_t samplerate;
 	char *p;
@@ -597,14 +594,9 @@ static int process_buffer(struct sr_input *in)
 	if (!inc->started) {
 		std_session_send_df_header(in->sdi);
 
-		packet.type = SR_DF_META;
-		packet.payload = &meta;
 		samplerate = inc->samplerate / inc->downsample;
-		src = sr_config_new(SR_CONF_SAMPLERATE, g_variant_new_uint64(samplerate));
-		meta.config = g_slist_append(NULL, src);
-		sr_session_send(in->sdi, &packet);
-		g_slist_free(meta.config);
-		sr_config_free(src);
+		sr_session_send_meta(in->sdi, SR_CONF_SAMPLERATE,
+				g_variant_new_uint64(samplerate), NULL);
 
 		inc->started = TRUE;
 	}

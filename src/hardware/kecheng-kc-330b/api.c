@@ -318,9 +318,6 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 	struct sr_dev_driver *di = sdi->driver;
 	struct drv_context *drvc;
 	struct dev_context *devc;
-	struct sr_datafeed_packet packet;
-	struct sr_datafeed_meta meta;
-	struct sr_config *src;
 	struct sr_usb_dev_inst *usb;
 	GVariant *gvar;
 	const uint64_t *si;
@@ -365,14 +362,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 
 		si = kecheng_kc_330b_sample_intervals[buf[1]];
 		gvar = std_gvar_tuple_u64(si[0], si[1]);
-
-		src = sr_config_new(SR_CONF_SAMPLE_INTERVAL, gvar);
-		packet.type = SR_DF_META;
-		packet.payload = &meta;
-		meta.config = g_slist_append(NULL, src);
-		sr_session_send(sdi, &packet);
-		g_slist_free(meta.config);
-		sr_config_free(src);
+		sr_session_send_meta(sdi, SR_CONF_SAMPLE_INTERVAL, gvar, NULL);
 	}
 
 	if (!(devc->xfer = libusb_alloc_transfer(0)))

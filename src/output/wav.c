@@ -241,7 +241,6 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 	const struct sr_datafeed_analog *analog;
 	const struct sr_config *src;
 	struct sr_channel *ch;
-	GSList *l;
 	const GSList *channels;
 	float f;
 	int num_channels, num_samples, size, *chan_idx, idx, i, j, ret;
@@ -255,12 +254,9 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 	switch (packet->type) {
 	case SR_DF_META:
 		meta = packet->payload;
-		for (l = meta->config; l; l = l->next) {
-			src = l->data;
-			if (src->key != SR_CONF_SAMPLERATE)
-				continue;
+		src = meta->config;
+		if (src->key == SR_CONF_SAMPLERATE)
 			outc->samplerate = g_variant_get_uint64(src->data);
-		}
 		break;
 	case SR_DF_ANALOG:
 		if (!outc->header_done) {

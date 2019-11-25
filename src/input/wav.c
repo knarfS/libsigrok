@@ -253,9 +253,6 @@ static void send_chunk(const struct sr_input *in, int offset, int num_samples)
 static int process_buffer(struct sr_input *in)
 {
 	struct context *inc;
-	struct sr_datafeed_packet packet;
-	struct sr_datafeed_meta meta;
-	struct sr_config *src;
 	int offset, chunk_samples, total_samples, processed, max_chunk_samples;
 	int num_samples, i;
 
@@ -263,13 +260,8 @@ static int process_buffer(struct sr_input *in)
 	if (!inc->started) {
 		std_session_send_df_header(in->sdi);
 
-		packet.type = SR_DF_META;
-		packet.payload = &meta;
-		src = sr_config_new(SR_CONF_SAMPLERATE, g_variant_new_uint64(inc->samplerate));
-		meta.config = g_slist_append(NULL, src);
-		sr_session_send(in->sdi, &packet);
-		g_slist_free(meta.config);
-		sr_config_free(src);
+		sr_session_send_meta(in->sdi, SR_CONF_SAMPLERATE,
+				g_variant_new_uint64(inc->samplerate), NULL);
 
 		inc->started = TRUE;
 	}

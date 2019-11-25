@@ -117,32 +117,30 @@ static void datafeed_in(const struct sr_dev_inst *sdi,
 		meta = packet->payload;
 		fail_unless(p != NULL, "SR_DF_META payload was NULL.");
 
-		for (l = meta->config; l; l = l->next) {
-			src = l->data;
-			// g_debug("Got meta key: %d.", src->key);
-			switch (src->key) {
-			case SR_CONF_SAMPLERATE:
-				samplerate = g_variant_get_uint64(src->data);
-				if (!expected_samplerate)
-					break;
-				fail_unless(samplerate == *expected_samplerate,
-					    "Expected samplerate=%" PRIu64 ", "
-					    "got %" PRIu64 "", samplerate,
-					    *expected_samplerate);
-				// g_debug("samplerate = %" PRIu64 " Hz.",
-				// 	samplerate);
+		src = meta->config;
+		// g_debug("Got meta key: %d.", src->key);
+		switch (src->key) {
+		case SR_CONF_SAMPLERATE:
+			samplerate = g_variant_get_uint64(src->data);
+			if (!expected_samplerate)
 				break;
-			case SR_CONF_SAMPLE_INTERVAL:
-				sample_interval = g_variant_get_uint64(src->data);
-				(void)sample_interval;
-				// g_debug("sample interval = %" PRIu64 " ms.",
-				// 	sample_interval);
-				break;
-			default:
-				/* Unknown metadata is not an error. */
-				g_debug("Got unknown meta key: %d.", src->key);
-				break;
-			}
+			fail_unless(samplerate == *expected_samplerate,
+					"Expected samplerate=%" PRIu64 ", "
+					"got %" PRIu64 "", samplerate,
+					*expected_samplerate);
+			// g_debug("samplerate = %" PRIu64 " Hz.",
+			// 	samplerate);
+			break;
+		case SR_CONF_SAMPLE_INTERVAL:
+			sample_interval = g_variant_get_uint64(src->data);
+			(void)sample_interval;
+			// g_debug("sample interval = %" PRIu64 " ms.",
+			// 	sample_interval);
+			break;
+		default:
+			/* Unknown metadata is not an error. */
+			g_debug("Got unknown meta key: %d.", src->key);
+			break;
 		}
 		break;
 	case SR_DF_LOGIC:

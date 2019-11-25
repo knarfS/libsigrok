@@ -101,29 +101,27 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 		break;
 	case SR_DF_META:
 		meta = packet->payload;
-		for (l = meta->config; l; l = l->next) {
-			src = l->data;
-			if (!(srci = sr_key_info_get(SR_KEY_CONFIG, src->key)))
-				return SR_ERR;
-			*out = g_string_sized_new(512);
-			g_string_append(*out, "META ");
-			g_string_append_printf(*out, "%s: ", srci->id);
-			if (srci->datatype == SR_T_BOOL) {
-				g_string_append_printf(*out, "%u",
-					g_variant_get_boolean(src->data));
-			} else if (srci->datatype == SR_T_FLOAT) {
-				g_string_append_printf(*out, "%f",
-					g_variant_get_double(src->data));
-			} else if (srci->datatype == SR_T_UINT64) {
-				g_string_append_printf(*out, "%"
-					G_GUINT64_FORMAT,
-					g_variant_get_uint64(src->data));
-			} else if (srci->datatype == SR_T_STRING) {
-				g_string_append_printf(*out, "%s",
-					g_variant_get_string(src->data, NULL));
-			}
-			g_string_append(*out, "\n");
+		src = meta->config;
+		if (!(srci = sr_key_info_get(SR_KEY_CONFIG, src->key)))
+			return SR_ERR;
+		*out = g_string_sized_new(512);
+		g_string_append(*out, "META ");
+		g_string_append_printf(*out, "%s: ", srci->id);
+		if (srci->datatype == SR_T_BOOL) {
+			g_string_append_printf(*out, "%u",
+				g_variant_get_boolean(src->data));
+		} else if (srci->datatype == SR_T_FLOAT) {
+			g_string_append_printf(*out, "%f",
+				g_variant_get_double(src->data));
+		} else if (srci->datatype == SR_T_UINT64) {
+			g_string_append_printf(*out, "%"
+				G_GUINT64_FORMAT,
+				g_variant_get_uint64(src->data));
+		} else if (srci->datatype == SR_T_STRING) {
+			g_string_append_printf(*out, "%s",
+				g_variant_get_string(src->data, NULL));
 		}
+		g_string_append(*out, "\n");
 		break;
 	case SR_DF_ANALOG:
 		analog = packet->payload;

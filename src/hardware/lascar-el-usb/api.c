@@ -259,9 +259,6 @@ static int lascar_proc_config(const struct sr_dev_inst *sdi)
 static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 {
 	struct sr_dev_driver *di = sdi->driver;
-	struct sr_datafeed_packet packet;
-	struct sr_datafeed_meta meta;
-	struct sr_config *src;
 	struct dev_context *devc;
 	struct drv_context *drvc;
 	struct sr_usb_dev_inst *usb;
@@ -283,13 +280,8 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 	std_session_send_df_header(sdi);
 
 	interval = (devc->config[0x1c] | (devc->config[0x1d] << 8)) * 1000;
-	packet.type = SR_DF_META;
-	packet.payload = &meta;
-	src = sr_config_new(SR_CONF_SAMPLE_INTERVAL, g_variant_new_uint64(interval));
-	meta.config = g_slist_append(NULL, src);
-	sr_session_send(sdi, &packet);
-	g_slist_free(meta.config);
-	sr_config_free(src);
+	sr_session_send_meta(sdi, SR_CONF_SAMPLE_INTERVAL,
+			g_variant_new_uint64(interval), NULL);
 
 	if (devc->logged_samples == 0) {
 		/* This ensures the frontend knows the session is done. */

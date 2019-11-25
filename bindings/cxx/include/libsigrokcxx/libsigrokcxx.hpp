@@ -90,6 +90,7 @@ namespace sigrok
 /* Forward declarations */
 class SR_API Error;
 class SR_API Context;
+class SR_API Configurable;
 class SR_API Driver;
 class SR_API Device;
 class SR_API HardwareDevice;
@@ -276,7 +277,9 @@ public:
 	std::shared_ptr<Packet> create_header_packet(Glib::TimeVal start_time);
 	/** Create a meta packet. */
 	std::shared_ptr<Packet> create_meta_packet(
-		std::map<const ConfigKey *, Glib::VariantBase> config);
+		const ConfigKey *config_key, Glib::VariantBase value,
+		std::shared_ptr<Device> device,
+		std::shared_ptr<Configurable> configurable);
 	/** Create a logic packet. */
 	std::shared_ptr<Packet> create_logic_packet(
 		void *data_pointer, size_t data_length, unsigned int unit_size);
@@ -346,6 +349,10 @@ protected:
 	struct sr_dev_driver *config_driver;
 	struct sr_dev_inst *config_sdi;
 	struct sr_channel_group *config_channel_group;
+	friend std::shared_ptr<Packet> Context::create_meta_packet(
+		const ConfigKey *key, Glib::VariantBase value,
+		std::shared_ptr<Device> device,
+		std::shared_ptr<Configurable> configurable);
 };
 
 /** A hardware driver provided by the library */
@@ -375,7 +382,9 @@ private:
 };
 
 /** A generic device, either hardware or virtual */
-class SR_API Device : public Configurable
+class SR_API Device :
+	public UserOwned<Device>,
+	public Configurable
 {
 public:
 	/** Vendor name for this device. */
@@ -399,7 +408,7 @@ public:
 protected:
 	explicit Device(struct sr_dev_inst *structure);
 	~Device();
-	virtual std::shared_ptr<Device> get_shared_from_this() = 0;
+	virtual std::shared_ptr<Device> get_shared_from_this();
 	std::shared_ptr<Channel> get_channel(struct sr_channel *ptr);
 
 	struct sr_dev_inst *_structure;
@@ -412,12 +421,16 @@ private:
 	friend class ChannelGroup;
 	friend class Output;
 	friend class Analog;
+	friend class Meta;
+	friend std::shared_ptr<Packet> Context::create_meta_packet(
+		const ConfigKey *key, Glib::VariantBase value,
+		std::shared_ptr<Device> device,
+		std::shared_ptr<Configurable> configurable);
 	friend struct std::default_delete<Device>;
 };
 
 /** A real hardware device, connected via a driver */
 class SR_API HardwareDevice :
-	public UserOwned<HardwareDevice>,
 	public Device
 {
 public:
@@ -426,7 +439,6 @@ public:
 private:
 	HardwareDevice(std::shared_ptr<Driver> driver, struct sr_dev_inst *structure);
 	~HardwareDevice();
-	std::shared_ptr<Device> get_shared_from_this();
 	std::shared_ptr<Driver> _driver;
 
 	friend class Driver;
@@ -436,7 +448,6 @@ private:
 
 /** A virtual device, created by the user */
 class SR_API UserDevice :
-	public UserOwned<UserDevice>,
 	public Device
 {
 public:
@@ -445,7 +456,6 @@ public:
 private:
 	UserDevice(std::string vendor, std::string model, std::string version);
 	~UserDevice();
-	std::shared_ptr<Device> get_shared_from_this();
 
 	friend class Context;
 	friend struct std::default_delete<UserDevice>;
@@ -499,6 +509,7 @@ private:
 	~ChannelGroup();
 	std::vector<Channel *> _channels;
 	friend class Device;
+	friend class Meta;
 	friend struct std::default_delete<ChannelGroup>;
 };
 
@@ -599,7 +610,6 @@ class SR_API SessionDevice :
 private:
 	explicit SessionDevice(struct sr_dev_inst *sdi);
 	~SessionDevice();
-	std::shared_ptr<Device> get_shared_from_this();
 
 	friend class Session;
 	friend struct std::default_delete<SessionDevice>;
@@ -727,15 +737,17 @@ class SR_API Meta :
 	public PacketPayload
 {
 public:
-	/* Mapping of (ConfigKey, value) pairs. */
-	std::map<const ConfigKey *, Glib::VariantBase> config() const;
+	const ConfigKey *config_key() const;
+	Glib::VariantBase value() const;
+	std::shared_ptr<Configurable> configurable() const;
 private:
-	explicit Meta(const struct sr_datafeed_meta *structure);
+	explicit Meta(const struct sr_datafeed_meta *structure,
+		std::shared_ptr<Device> device);
 	~Meta();
 	std::shared_ptr<PacketPayload> share_owned_by(std::shared_ptr<Packet> parent);
 
 	const struct sr_datafeed_meta *_structure;
-	std::map<const ConfigKey *, Glib::VariantBase> _config;
+	std::shared_ptr<Device> _device;
 
 	friend class Packet;
 };
@@ -929,7 +941,6 @@ class SR_API InputDevice :
 private:
 	InputDevice(std::shared_ptr<Input> input, struct sr_dev_inst *sdi);
 	~InputDevice();
-	std::shared_ptr<Device> get_shared_from_this();
 	std::shared_ptr<Input> _input;
 	friend class Input;
 	friend struct std::default_delete<InputDevice>;

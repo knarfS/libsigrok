@@ -200,7 +200,7 @@ static int config_get(uint32_t key, GVariant **data,
 	struct dev_context *devc;
 	float fvalue;
 
-	(void)cg;
+	(void)cg; // TODO: Device has cg "1"
 
 	devc = sdi->priv;
 
@@ -269,7 +269,7 @@ static int config_set(uint32_t key, GVariant *data,
 {
 	struct dev_context *devc;
 
-	(void)cg;
+	(void)cg; // TODO: Device has cg "1"
 
 	devc = sdi->priv;
 

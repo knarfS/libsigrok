@@ -217,9 +217,6 @@ static void process_byte(const struct sr_dev_inst *sdi, const unsigned char c,
 		int handle_packets)
 {
 	struct dev_context *devc;
-	struct sr_datafeed_packet packet;
-	struct sr_datafeed_meta meta;
-	struct sr_config *src;
 	gint64 cur_time;
 	int len;
 
@@ -340,14 +337,8 @@ static void process_byte(const struct sr_dev_inst *sdi, const unsigned char c,
 				sr_dbg("Unknown record token 0x%.2x", c);
 				return;
 			}
-			packet.type = SR_DF_META;
-			packet.payload = &meta;
-			src = sr_config_new(SR_CONF_SAMPLE_INTERVAL,
-					g_variant_new_uint64(devc->buf[7] * 1000));
-			meta.config = g_slist_append(NULL, src);
-			sr_session_send(sdi, &packet);
-			g_slist_free(meta.config);
-			sr_config_free(src);
+			sr_session_send_meta(sdi, SR_CONF_SAMPLE_INTERVAL,
+					g_variant_new_uint64(devc->buf[7] * 1000), NULL);
 			devc->buf_len = 0;
 		}
 	} else if (devc->state == ST_GET_LOG_RECORD_DATA) {

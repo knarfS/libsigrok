@@ -41,13 +41,13 @@ static void send_frame_start(struct sr_dev_inst *sdi)
 	if (freq != devc->output_freq) {
 		devc->output_freq = freq;
 		sr_session_send_meta(sdi, SR_CONF_OUTPUT_FREQUENCY,
-			g_variant_new_double(freq));
+			g_variant_new_double(freq), NULL); // TODO: channel group
 	}
 	model = info->circuit_model;
 	if (model && model != devc->circuit_model) {
 		devc->circuit_model = model;
 		sr_session_send_meta(sdi, SR_CONF_EQUIV_CIRCUIT_MODEL,
-			g_variant_new_string(model));
+			g_variant_new_string(model), NULL); // TODO: channel group
 	}
 
 	/* Data is about to get sent. Start a new frame. */

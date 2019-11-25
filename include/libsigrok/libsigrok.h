@@ -486,7 +486,12 @@ struct sr_datafeed_header {
 
 /** Datafeed payload for type SR_DF_META. */
 struct sr_datafeed_meta {
-	GSList *config;
+	struct sr_config *config;
+	/**
+	 * The channel group to which the config key belongs to. NULL if the
+	 * config key belongs to the device itself.
+	 */
+	const struct sr_channel_group *channel_group;
 };
 
 /** Logic datafeed payload for type SR_DF_LOGIC. */
