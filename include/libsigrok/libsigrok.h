@@ -625,6 +625,10 @@ struct sr_config {
 	uint32_t key;
 	/** Key-specific data. */
 	GVariant *data;
+	/** Some of the keys can have an encoding associated with the data */
+	struct sr_analog_encoding *encoding;
+	/** Some of the keys can have a meaning associated with the data */
+	struct sr_analog_meaning *meaning;
 };
 
 enum sr_keytype {
