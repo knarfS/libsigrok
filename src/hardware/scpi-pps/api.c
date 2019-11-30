@@ -422,9 +422,9 @@ static int config_get(uint32_t key, GVariant **data,
 		gvtype = G_VARIANT_TYPE_DOUBLE;
 		cmd = SCPI_CMD_GET_OVER_CURRENT_PROTECTION_THRESHOLD;
 		break;
-	case SR_CONF_OVER_TEMPERATURE_PROTECTION:
+	case SR_CONF_OVER_TEMPERATURE_PROTECTION_ENABLED:
 		gvtype = G_VARIANT_TYPE_BOOLEAN;
-		cmd = SCPI_CMD_GET_OVER_TEMPERATURE_PROTECTION;
+		cmd = SCPI_CMD_GET_OVER_TEMPERATURE_PROTECTION_ENABLED;
 		break;
 	case SR_CONF_OVER_TEMPERATURE_PROTECTION_ACTIVE:
 		if (devc->device->dialect == SCPI_DIALECT_HP_66XXB ||
@@ -650,7 +650,7 @@ static int config_set(uint32_t key, GVariant *data,
 				channel_group_cmd, channel_group_name,
 				SCPI_CMD_SET_OVER_CURRENT_PROTECTION_THRESHOLD, d);
 		break;
-	case SR_CONF_OVER_TEMPERATURE_PROTECTION:
+	case SR_CONF_OVER_TEMPERATURE_PROTECTION_ENABLED:
 		if (g_variant_get_boolean(data))
 			ret = sr_scpi_cmd(sdi, devc->device->commands,
 					channel_group_cmd, channel_group_name,

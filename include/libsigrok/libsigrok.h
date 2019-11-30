@@ -904,7 +904,7 @@ enum sr_configkey {
 	SR_CONF_CHANNEL_CONFIG,
 
 	/**
-	 * Over-voltage protection (OVP) feature
+	 * Over-voltage protection (OVP) feature.
 	 * @arg type: boolean
 	 * @arg get: @b true if currently enabled
 	 * @arg set: enable/disable
@@ -912,7 +912,7 @@ enum sr_configkey {
 	SR_CONF_OVER_VOLTAGE_PROTECTION_ENABLED,
 
 	/**
-	 * Over-voltage protection (OVP) active
+	 * Over-voltage protection (OVP) active.
 	 * @arg type: boolean
 	 * @arg get: @b true if device has activated OVP, i.e. the output voltage
 	 *      exceeds the over-voltage protection threshold.
@@ -920,7 +920,7 @@ enum sr_configkey {
 	SR_CONF_OVER_VOLTAGE_PROTECTION_ACTIVE,
 
 	/**
-	 * Over-voltage protection (OVP) threshold
+	 * Over-voltage protection (OVP) threshold.
 	 * @arg type: double (voltage)
 	 * @arg get: get current threshold
 	 * @arg set: set new threshold
@@ -928,7 +928,7 @@ enum sr_configkey {
 	SR_CONF_OVER_VOLTAGE_PROTECTION_THRESHOLD,
 
 	/**
-	 * Over-current protection (OCP) feature
+	 * Over-current protection (OCP) feature.
 	 * @arg type: boolean
 	 * @arg get: @b true if currently enabled
 	 * @arg set: enable/disable
@@ -936,7 +936,7 @@ enum sr_configkey {
 	SR_CONF_OVER_CURRENT_PROTECTION_ENABLED,
 
 	/**
-	 * Over-current protection (OCP) active
+	 * Over-current protection (OCP) active.
 	 * @arg type: boolean
 	 * @arg get: @b true if device has activated OCP, i.e. the current current
 	 *      exceeds the over-current protection threshold.
@@ -944,7 +944,7 @@ enum sr_configkey {
 	SR_CONF_OVER_CURRENT_PROTECTION_ACTIVE,
 
 	/**
-	 * Over-current protection (OCP) threshold
+	 * Over-current protection (OCP) threshold.
 	 * @arg type: double (current)
 	 * @arg get: get current threshold
 	 * @arg set: set new threshold
@@ -966,8 +966,13 @@ enum sr_configkey {
 	 */
 	SR_CONF_REGULATION,
 
-	/** Over-temperature protection (OTP) */
-	SR_CONF_OVER_TEMPERATURE_PROTECTION,
+	/**
+	 * Over-temperature protection (OTP) feature.
+	 * @arg type: boolean
+	 * @arg get: @b true if currently enabled
+	 * @arg set: enable/disable
+	 */
+	SR_CONF_OVER_TEMPERATURE_PROTECTION_ENABLED,
 
 	/** Output frequency in Hz. */
 	SR_CONF_OUTPUT_FREQUENCY,
@@ -981,19 +986,39 @@ enum sr_configkey {
 	/** Equivalent circuit model. */
 	SR_CONF_EQUIV_CIRCUIT_MODEL,
 
-	/** Over-temperature protection (OTP) active. */
+	/**
+	 * Over-temperature protection (OTP) active.
+	 * @arg type: boolean
+	 * @arg get: @b true if device has activated OTP, i.e. the temperature
+	 *      exceeds the over-temperature protection threshold.
+	 */
 	SR_CONF_OVER_TEMPERATURE_PROTECTION_ACTIVE,
 
-	/** Under-voltage condition. */
-	SR_CONF_UNDER_VOLTAGE_CONDITION,
+	/**
+	 * Under-voltage condition (UVC) feature
+	 * @arg type: boolean
+	 * @arg get: @b true if currently enabled
+	 * @arg set: enable/disable
+	 */
+	SR_CONF_UNDER_VOLTAGE_CONDITION_ENABLED,
 
-	/** Under-voltage condition active. */
+	/**
+	 * Under-voltage condition (UVC) active.
+	 * @arg type: boolean
+	 * @arg get: @b true if device has activated UVC, i.e. the current voltage
+	 *      goes below the under-voltage condition threshold.
+	 */
 	SR_CONF_UNDER_VOLTAGE_CONDITION_ACTIVE,
 
 	/** Trigger level. */
 	SR_CONF_TRIGGER_LEVEL,
 
-	/** Under-voltage condition threshold. */
+	/**
+	 * Under-voltage condition (UVC) threshold.
+	 * @arg type: double (current)
+	 * @arg get: get voltage threshold
+	 * @arg set: set new threshold
+	 */
 	SR_CONF_UNDER_VOLTAGE_CONDITION_THRESHOLD,
 
 	/**

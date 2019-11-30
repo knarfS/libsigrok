@@ -319,10 +319,10 @@ static void handle_packet(const struct sr_dev_inst *sdi)
 		g_strfreev(tokens);
 		g_cond_signal(&devc->uvc_threshold_cond);
 		if (devc->uvc_threshold == .0) {
-			sr_session_send_meta(sdi, SR_CONF_UNDER_VOLTAGE_CONDITION,
+			sr_session_send_meta(sdi, SR_CONF_UNDER_VOLTAGE_CONDITION_ENABLED,
 				g_variant_new_boolean(FALSE), channel_group);
 		} else {
-			sr_session_send_meta(sdi, SR_CONF_UNDER_VOLTAGE_CONDITION,
+			sr_session_send_meta(sdi, SR_CONF_UNDER_VOLTAGE_CONDITION_ENABLED,
 				g_variant_new_boolean(TRUE), channel_group);
 			sr_session_send_meta(sdi,
 				SR_CONF_UNDER_VOLTAGE_CONDITION_THRESHOLD,
