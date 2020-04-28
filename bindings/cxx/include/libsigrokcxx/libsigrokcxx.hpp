@@ -1038,7 +1038,13 @@ private:
 template <class Class, typename Enum> class SR_API EnumValue
 {
 public:
-	/** The integer constant associated with this value. */
+	/**
+	 * The integer constant associated with this value.
+	 *
+	 * TODO: Change datatype to "unsigned int" to match functions:
+	 *        - static std::vector<const QuantityFlag *> flags_from_mask(unsigned int mask)
+	 *        - static unsigned int mask_from_flags(std::vector<const QuantityFlag *> flags)
+	 */
 	int id() const
 	{
 		return static_cast<int>(_id);
@@ -1048,7 +1054,13 @@ public:
 	{
 		return _name;
 	}
-	/** Get value associated with a given integer constant. */
+	/**
+	 * Get value associated with a given integer constant.
+	 *
+	 * TODO: Change datatype to "unsigned int" to match functions:
+	 *        - static std::vector<const QuantityFlag *> flags_from_mask(unsigned int mask)
+	 *        - static unsigned int mask_from_flags(std::vector<const QuantityFlag *> flags)
+	 */
 	static const Class *get(int id)
 	{
 		const auto pos = _values.find(static_cast<Enum>(id));
