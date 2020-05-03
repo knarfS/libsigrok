@@ -394,9 +394,9 @@ public:
 	/** Channel groups available on this device, indexed by name. */
 	std::map<std::string, std::shared_ptr<ChannelGroup> > channel_groups();
 	/** Open device. */
-	void open();
+	virtual void open() = 0;
 	/** Close device. */
-	void close();
+	virtual void close() = 0;
 protected:
 	explicit Device(struct sr_dev_inst *structure);
 	~Device();
@@ -424,10 +424,14 @@ class SR_API HardwareDevice :
 public:
 	/** Driver providing this device. */
 	std::shared_ptr<Driver> driver();
+	/** Open device. */
+	void open() override;
+	/** Close device. */
+	void close() override;
 private:
 	HardwareDevice(std::shared_ptr<Driver> driver, struct sr_dev_inst *structure);
 	~HardwareDevice();
-	std::shared_ptr<Device> get_shared_from_this();
+	std::shared_ptr<Device> get_shared_from_this() override;
 	std::shared_ptr<Driver> _driver;
 
 	friend class Driver;
@@ -443,10 +447,14 @@ class SR_API UserDevice :
 public:
 	/** Add a new channel to this device. */
 	std::shared_ptr<Channel> add_channel(unsigned int index, const ChannelType *type, std::string name);
+	/** Open device. */
+	void open() override;
+	/** Close device. */
+	void close() override;
 private:
 	UserDevice(std::string vendor, std::string model, std::string version);
 	~UserDevice();
-	std::shared_ptr<Device> get_shared_from_this();
+	std::shared_ptr<Device> get_shared_from_this() override;
 
 	friend class Context;
 	friend struct std::default_delete<UserDevice>;
@@ -597,10 +605,15 @@ class SR_API SessionDevice :
 	public ParentOwned<SessionDevice, Session>,
 	public Device
 {
+public:
+	/** Open device. */
+	void open() override;
+	/** Close device. */
+	void close() override;
 private:
 	explicit SessionDevice(struct sr_dev_inst *sdi);
 	~SessionDevice();
-	std::shared_ptr<Device> get_shared_from_this();
+	std::shared_ptr<Device> get_shared_from_this() override;
 
 	friend class Session;
 	friend struct std::default_delete<SessionDevice>;
@@ -927,10 +940,15 @@ class SR_API InputDevice :
 	public ParentOwned<InputDevice, Input>,
 	public Device
 {
+public:
+	/** Open device. */
+	void open() override;
+	/** Close device. */
+	void close() override;
 private:
 	InputDevice(std::shared_ptr<Input> input, struct sr_dev_inst *sdi);
 	~InputDevice();
-	std::shared_ptr<Device> get_shared_from_this();
+	std::shared_ptr<Device> get_shared_from_this() override;
 	std::shared_ptr<Input> _input;
 	friend class Input;
 	friend struct std::default_delete<InputDevice>;

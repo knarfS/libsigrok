@@ -666,16 +666,6 @@ Device::channel_groups()
 	return result;
 }
 
-void Device::open()
-{
-	check(sr_dev_open(_structure));
-}
-
-void Device::close()
-{
-	check(sr_dev_close(_structure));
-}
-
 HardwareDevice::HardwareDevice(shared_ptr<Driver> driver,
 		struct sr_dev_inst *structure) :
 	Device(structure),
@@ -695,6 +685,16 @@ shared_ptr<Device> HardwareDevice::get_shared_from_this()
 shared_ptr<Driver> HardwareDevice::driver()
 {
 	return _driver;
+}
+
+void HardwareDevice::open()
+{
+	check(sr_dev_open(_structure));
+}
+
+void HardwareDevice::close()
+{
+	check(sr_dev_close(_structure));
 }
 
 UserDevice::UserDevice(string vendor, string model, string version) :
@@ -722,6 +722,14 @@ shared_ptr<Channel> UserDevice::add_channel(unsigned int index,
 	unique_ptr<Channel> channel {new Channel{ch}};
 	_channels.emplace(ch, move(channel));
 	return get_channel(ch);
+}
+
+void UserDevice::open()
+{
+}
+
+void UserDevice::close()
+{
 }
 
 Channel::Channel(struct sr_channel *structure) :
@@ -922,6 +930,14 @@ SessionDevice::~SessionDevice()
 shared_ptr<Device> SessionDevice::get_shared_from_this()
 {
 	return static_pointer_cast<Device>(shared_from_this());
+}
+
+void SessionDevice::open()
+{
+}
+
+void SessionDevice::close()
+{
 }
 
 Session::Session(shared_ptr<Context> context) :
@@ -1507,6 +1523,14 @@ InputDevice::~InputDevice()
 shared_ptr<Device> InputDevice::get_shared_from_this()
 {
 	return static_pointer_cast<Device>(shared_from_this());
+}
+
+void InputDevice::open()
+{
+}
+
+void InputDevice::close()
+{
 }
 
 Option::Option(const struct sr_option *structure,
