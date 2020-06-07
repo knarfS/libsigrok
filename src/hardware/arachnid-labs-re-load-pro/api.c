@@ -160,6 +160,8 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	sr_sw_limits_init(&devc->limits);
 	sdi->priv = devc;
 
+	g_mutex_init(&devc->acquisition_mutex);
+
 	serial_close(serial);
 
 	return std_scan_complete(di, g_slist_append(NULL, sdi));
@@ -296,6 +298,7 @@ static int dev_close(struct sr_dev_inst *sdi)
 			strlen(CMD_MONITOR_STOP))) < (int)strlen(CMD_MONITOR_STOP)) {
 		sr_dbg("Unable to stop monitoring.");
 	}
+	g_mutex_clear(&devc->acquisition_mutex);
 
 	return std_serial_dev_close(sdi);
 }
@@ -325,8 +328,6 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 	memset(devc->buf, 0, RELOADPRO_BUFSIZE);
 	devc->buflen = 0;
 
-	g_mutex_init(&devc->acquisition_mutex);
-
 	serial_source_add(sdi->session, serial, G_IO_IN, 100,
 			  reloadpro_receive_data, (void *)sdi);
 
@@ -341,10 +342,7 @@ static int dev_acquisition_stop(struct sr_dev_inst *sdi)
 	devc = sdi->priv;
 	devc->acquisition_running = FALSE;
 
-	ret = std_serial_dev_acquisition_stop(sdi);
-	g_mutex_clear(&devc->acquisition_mutex);
-
-	return ret;
+	return std_serial_dev_acquisition_stop(sdi);
 }
 
 static struct sr_dev_driver arachnid_labs_re_load_pro_driver_info = {
