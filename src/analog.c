@@ -91,6 +91,7 @@ static struct unit_mq_string unit_strings[] = {
 	{ SR_UNIT_JOULE, "J" },
 	{ SR_UNIT_COULOMB, "C" },
 	{ SR_UNIT_AMPERE_HOUR, "Ah" },
+	{ SR_UNIT_DECIBEL, "dB" }
 	ALL_ZERO
 };
 
