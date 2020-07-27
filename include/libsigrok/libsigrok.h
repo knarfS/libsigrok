@@ -341,6 +341,8 @@ enum sr_unit {
 	SR_UNIT_COULOMB,
 	/** Electric charge in ampere hour [Ah]. */
 	SR_UNIT_AMPERE_HOUR,
+	/** A relative unit of (power) measurement [dB]. */
+	SR_UNIT_DECIBEL,
 
 	/*
 	 * Update unit_strings[] (analog.c) and fancyprint() (output/analog.c)
