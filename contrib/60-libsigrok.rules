@@ -159,6 +159,10 @@ ATTRS{idVendor}=="04b4", ATTRS{idProduct}=="602a", ENV{ID_SIGROK}="1"
 # Hantek 4032L
 ATTRS{idVendor}=="04b5", ATTRS{idProduct}=="4032", ENV{ID_SIGROK}="1"
 
+# Hantek DSO5000BM series
+# lsusb: "049f:505a Compaq Computer Corp."
+ATTRS{idVendor}=="049f", ATTRS{idProduct}=="505a", ENV{ID_SIGROK}="1"
+
 # IKALOGIC Scanalogic-2
 ATTRS{idVendor}=="20a0", ATTRS{idProduct}=="4123", ENV{ID_SIGROK}="1"
 
