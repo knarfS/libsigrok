@@ -6,7 +6,7 @@
  * https://www.mikrocontroller.net/articles/Hantek_Protokoll
  * https://elinux.org/Das_Oszi_Protocol
  *
- * Copyright (C) 2018-2019 Frank Stettner <frank-stettner@gmx.net>
+ * Copyright (C) 2018-2021 Frank Stettner <frank-stettner@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -627,7 +627,7 @@ SR_PRIV int hantek_5xxxb_get_sample_data(const struct sr_dev_inst *sdi,
 			sr_err("Error while reading data for channel %i", channel_idx);
 			continue; // TODO: or break?
 		} else if (in_buf[4] != 0x01) {
-			sr_err("Response sub command does not match (got 0x%X, expected 0x%X)",
+			sr_err("Response sub command don't match (got 0x%X, expected 0x%X)",
 				in_buf[4], 0x01);
 			break;
 			//return SR_ERR;
