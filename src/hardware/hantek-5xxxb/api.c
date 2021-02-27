@@ -6,7 +6,7 @@
  * https://www.mikrocontroller.net/articles/Hantek_Protokoll
  * https://elinux.org/Das_Oszi_Protocol
  *
- * Copyright (C) 2018-2019 Frank Stettner <frank-stettner@gmx.net>
+ * Copyright (C) 2018-2021 Frank Stettner <frank-stettner@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -670,7 +670,7 @@ static int dev_acquisition_stop(struct sr_dev_inst *sdi)
 	return SR_OK;
 }
 
-SR_PRIV struct sr_dev_driver hantek_5xxxb_driver_info = {
+static struct sr_dev_driver hantek_5xxxb_driver_info = {
 	.name = "hantek-5xxxb",
 	.longname = "Hantek 5xxxB",
 	.api_version = 1,
