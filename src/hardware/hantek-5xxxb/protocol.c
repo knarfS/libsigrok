@@ -26,8 +26,13 @@
 #include <math.h>
 #include "protocol.h"
 
+//#define HANTEK_DEBUG
+
 static void print_sys_data(struct hantek_5xxxb_sys_data *sys_data)
 {
+#ifndef HANTEK_DEBUG
+	(void)sys_data;
+#else
 	sr_dbg("SysDATA:");
 
 	/* Vertical Channel 1 */
@@ -198,6 +203,7 @@ static void print_sys_data(struct hantek_5xxxb_sys_data *sys_data)
 	uint8_t math_fft_base;
 	uint8_t math_fft_vrms;
 	*/
+#endif
 }
 
 static uint8_t calc_checksum(uint8_t *msg, uint16_t msg_size)
@@ -248,7 +254,7 @@ static int receive_bulk(const struct sr_dev_inst *sdi,
 {
 	struct sr_usb_dev_inst *usb;
 	int ret;
-	uint32_t package_size;
+	int package_size;
 	uint8_t checksum;
 
 	usb = sdi->conn;
@@ -263,8 +269,8 @@ static int receive_bulk(const struct sr_dev_inst *sdi,
 
 	package_size = (in_buf[2] << 8) | in_buf[1];
 	if (*in_size != package_size+3) {
-		sr_err("Response size does not match (got %u, expected %i)",
-			   package_size+3, *in_size);
+		sr_err("Response size does not match (got %i, expected %i)",
+			package_size+3, *in_size);
 
 		sr_err("receive_bulk(): in_size = %i", *in_size);
 		sr_err("receive_bulk(): in_buff:");
@@ -278,13 +284,13 @@ static int receive_bulk(const struct sr_dev_inst *sdi,
 	checksum = calc_checksum(in_buf, *in_size-1);
 	if (in_buf[*in_size-1] != checksum) {
 		sr_err("Response checksum does not match (got %u, expected %u)",
-			   in_buf[*in_size-1], checksum);
+			in_buf[*in_size-1], checksum);
 		return SR_ERR;
 	}
 
 	if (in_buf[3] != expected_cmd + 0x80) {
 		sr_err("Response command does not match (got 0x%X, expected 0x%X)",
-			   in_buf[3], expected_cmd + 0x80);
+			in_buf[3], expected_cmd + 0x80);
 
 		sr_err("receive_bulk(): in_size = %i", *in_size);
 		sr_err("receive_bulk(): in_buff:");
@@ -350,7 +356,7 @@ SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 	uint32_t samples;
 	uint64_t samplerate, main_samplerate;
 
-	// TODO: wrong samplerates..., dont use win_tb, but the other?
+	// TODO: wrong samplerates for for timebase <= 80 ns. MemDepth? Channels? Menu?
 
 	if (sys_data->control_disp_menu)
 		num_hdiv = 16;
@@ -359,11 +365,15 @@ SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 
 	sr_err("hantek_5xxxb_get_samplerate(): horiz_tb = %u", sys_data->horiz_tb);
 	sr_err("hantek_5xxxb_get_samplerate(): horiz_win_tb = %u", sys_data->horiz_win_tb);
+	sr_err("hantek_5xxxb_get_samplerate(): channels = %u", sys_data->vert_ch[0].disp & sys_data->vert_ch[1].disp);
 	sr_err("hantek_5xxxb_get_samplerate(): control_disp_menu = %u", sys_data->control_disp_menu);
+	sr_err("hantek_5xxxb_get_samplerate(): memory_depth_mapper = %u (%u)",
+		memory_depth_mapper[sys_data->acqurie_store_depth], sys_data->acqurie_store_depth);
 
 	samples = sample_count
 		[sys_data->horiz_win_tb]
-		[sys_data->vert_ch[0].disp | sys_data->vert_ch[1].disp]
+		//[sys_data->horiz_tb]
+		[sys_data->vert_ch[0].disp & sys_data->vert_ch[1].disp]
 		[sys_data->control_disp_menu]
 		[memory_depth_mapper[sys_data->acqurie_store_depth]];
 	sr_err("hantek_5xxxb_get_samplerate(): sample count = %u", samples);
@@ -526,7 +536,7 @@ SR_PRIV int hantek_5xxxb_get_sys_data(const struct sr_dev_inst *sdi,
 		return ret;
 
 	memcpy(sys_data, in_buf+4, sizeof(struct hantek_5xxxb_sys_data));
-	//print_sys_data(sys_data);
+	print_sys_data(sys_data);
 
 	return SR_OK;
 }

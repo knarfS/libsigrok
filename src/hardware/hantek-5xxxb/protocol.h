@@ -32,27 +32,27 @@
 
 #define LOG_PREFIX "hantek-5xxxb"
 
-#define HANTEK_5XXXB_USB_VENDOR         0x049f
-#define HANTEK_5XXXB_USB_PRODUCT        0x505a
-#define HANTEK_5XXXB_USB_INTERFACE      0
-#define HANTEK_5XXXB_USB_EP_IN          0x82
-#define HANTEK_5XXXB_USB_EP_OUT         0x01
+#define HANTEK_5XXXB_USB_VENDOR             0x049f
+#define HANTEK_5XXXB_USB_PRODUCT            0x505a
+#define HANTEK_5XXXB_USB_INTERFACE          0
+#define HANTEK_5XXXB_USB_EP_IN              0x82
+#define HANTEK_5XXXB_USB_EP_OUT             0x01
 
-#define HANTEK_5XXXB_USB_NORM_MSG       0x53
-#define HANTEK_5XXXB_USB_DBG_MSG        0x43
+#define HANTEK_5XXXB_USB_NORM_MSG           0x53
+#define HANTEK_5XXXB_USB_DBG_MSG            0x43
 
-#define HANTEK_5XXXB_CMD_ECHO           0x00
-#define HANTEK_5XXXB_CMD_RD_SYSDATA     0x01
-#define HANTEK_5XXXB_CMD_RD_SAMPLEDATA  0x02
+#define HANTEK_5XXXB_CMD_ECHO               0x00
+#define HANTEK_5XXXB_CMD_RD_SYSDATA         0x01
+#define HANTEK_5XXXB_CMD_RD_SAMPLEDATA      0x02
 #define HANTEK_5XXXB_CMD_SUB_RD_SAMPLEDATA  0x01 // TODO
-#define HANTEK_5XXXB_CMD_RD_FILE        0x10
-#define HANTEK_5XXXB_CMD_WR_SYSDATA     0x11
-#define HANTEK_5XXXB_CMD_AQUISITION     0x12
-#define HANTEK_5XXXB_CMD_SUB_AQUISITION 0x00 // TODO
-#define HANTEK_5XXXB_CMD_LOCK           0x12
-#define HANTEK_5XXXB_CMD_SUB_LOCK       0x01
+#define HANTEK_5XXXB_CMD_RD_FILE            0x10
+#define HANTEK_5XXXB_CMD_WR_SYSDATA         0x11
+#define HANTEK_5XXXB_CMD_AQUISITION         0x12
+#define HANTEK_5XXXB_CMD_SUB_AQUISITION     0x00 // TODO
+#define HANTEK_5XXXB_CMD_LOCK               0x12
+#define HANTEK_5XXXB_CMD_SUB_LOCK           0x01
 
-#define HANTEK_5XXXB_NUM_VDIV           10
+#define HANTEK_5XXXB_NUM_VDIV               10
 
 
 enum states {
@@ -155,7 +155,7 @@ static const uint64_t main_timebase[][2] = {
 	{ 200, 1000000000 }, /* 0x03 */
 	{ 200, 1000000000 }, /* 0x04 */
 	{ 200, 1000000000 }, /* 0x05 */
-	{ 200, 1000000000 }, /* 0x06 */
+	{ 200, 1000000000 }, /* 0x06 KK */
 	{ 400, 1000000000 }, /* 0x07 */
 	{ 800, 1000000000 }, /* 0x08 */
 	/* microseonds */
@@ -251,13 +251,13 @@ static const uint32_t sample_count[][2][2][4] = {
 	/*  Ch1 On, Ch 2 Off                                               |    Ch1 On, Ch 2 On                                     */
 	/*  Menu Off                     |   Menu On                       |    Menu Off                |   Menu On                 */
 	/*    4k    40k    512k      1M        4k    40k    512k      1M          4k    40k    512k  1M       4k    40k    512k  1M */
-	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 2 ns   */
-	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 4 ns   */
-	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 8 ns   */
-	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 20 ns  */
-	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 40 ns  */
-	{{{ 1536,   768,    768,    768 }, { 1280,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 80 ns  */
-	{{{ 3072,  1536,   1536,   1536 }, { 2560,  1280,   1280,   1280 }}, {{ 1536,  1536,   1536, 0 }, { 1280,  1280,   1280, 0 }}}, /* 200 ns */
+	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 2 ns   20G != 1G */
+	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 4 ns   10G != 1G */
+	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 8 ns   5G  != 1G */
+	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 20 ns  2G  != 800 */
+	{{{  768,   768,    768,    768 }, {  640,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 40 ns  1G  != 800 */
+	{{{ 1536,   768,    768,    768 }, { 1280,   640,    640,    640 }}, {{  768,   768,    768, 0 }, {  640,   640,    640, 0 }}}, /* 80 ns  1G  != 800 */
+	{{{ 3072,  1536,   1536,   1536 }, { 2560,  1280,   1280,   1280 }}, {{ 1536,  1536,   1536, 0 }, { 1280,  1280,   1280, 0 }}}, /* 200 ns KK */
 	{{{ 3072,  3072,   3072,   3072 }, { 2560,  2560,   2560,   2560 }}, {{ 3072,  3072,   3072, 0 }, { 2560,  2560,   2560, 0 }}}, /* 400 ns */
 	{{{ 3072,  6144,   6144,   6144 }, { 2560,  5120,   5120,   5120 }}, {{ 3072,  3072,   3072, 0 }, { 2560,  2560,   2560, 0 }}}, /* 800 ns */
 	{{{ 3840, 15360,  15360,  15360 }, { 3200, 12800,  12800,  12800 }}, {{ 3840,  7680,   7680, 0 }, { 3200,  6400,   6400, 0 }}}, /* 2 us   */

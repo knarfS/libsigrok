@@ -48,6 +48,7 @@ static const uint32_t devopts[] = {
 	SR_CONF_TRIGGER_SLOPE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_TRIGGER_LEVEL | SR_CONF_GET | SR_CONF_SET,
 	/*
+	// 0 -> all post-trigger, 100 -> all pre-trigger, 50 -> middle (scopes default)
 	SR_CONF_CAPTURE_RATIO | SR_CONF_GET | SR_CONF_SET,
 	SR_CONF_BUFFERSIZE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	*/
@@ -142,15 +143,17 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 					break;
 			}
 			if (!l)
-				/* This device matched none of the ones that
-				 * matched the conn specification. */
+				/*
+				 * This device matched none of the ones that
+				 * matched the conn specification.
+				 */
 				continue;
 		}
 
 		libusb_get_device_descriptor(devlist[i], &des);
 
 		if (des.idVendor != HANTEK_5XXXB_USB_VENDOR ||
-		    des.idProduct != HANTEK_5XXXB_USB_PRODUCT)
+				des.idProduct != HANTEK_5XXXB_USB_PRODUCT)
 			continue;
 		sr_dbg("Found a 0x%X 0x%X.", des.idVendor, des.idProduct);
 
@@ -165,11 +168,28 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 		*/
 
 		/*
-		 * Hantek DSO5202B/BM/BMV, DSO5102B/BM/BMV, DSO5062B/BM/BMV
-		 * Hantek (Handhelds) DSO1202B/BV, DSO1102B/BV, DSO1062B/BV
-		 * Tekway DST1202B, DST1102B, DST1062B
-		 * Protek 3210, 3110
-		 * Voltcraft DSO-1062D, DSO-3062C
+		 * All known Devices with this protocol:
+		 *   Hantek DSO5202B/BM/BMV, DSO5102B/BM/BMV, DSO5062B/BM/BMV
+		 *   Hantek (Handhelds) DSO1202B/BV, DSO1102B/BV, DSO1062B/BV
+		 *   Tekway DST1202B, DST1102B, DST1062B
+		 *   Protek 3210, 3110
+		 *   Voltcraft DSO-1062D, DSO-3062C
+		 *
+		 * TODO:
+		 * in_sys_data->control_type is containing the actual model:
+		 *   0x00 : Tekway DST1202B, Hantek DSO5202B/BM/BMV, Protek 3210
+		 *   0x01 : Tekway DST1100
+		 *   0x02 : Tekway DST4060
+		 *   0x03 : Tekway DST1150
+		 *   0x04 : Tekway DST4042
+		 *   0x05 : Tekway DST1102B, Hantek DSO5102B/BM/BMV, Protek 3110
+		 *   0x06 : Tekway DST4062B, Hantek DSO5062C (?)
+		 *   0x07 : Tekway DST1152
+		 *   0x08 : Tekway DST3022B
+		 *   0x09 : Tekway DST3042B
+		 *   0x0A : Tekway DST4062
+		 *   0x0B : Tekway DST4102B, Hantek DSO5102C (?)
+		 *   0x0C : Tekway DST1062B, Hantek DSO5062B/BM/BMV, Voltcraft DSO-1062D/DSO-3062C
 		 */
 		sdi->vendor = g_strdup("Voltcraft"); // TODO
 		sdi->model = g_strdup("DSO-1062D"); // TODO
@@ -179,9 +199,9 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 			libusb_get_device_address(devlist[i]), NULL);
 
 		/*
-		* Add only the real channels. EXT isn't a source of data, only
-		* a trigger source internal to the device.
-		*/
+		 * Add only the real channels. EXT isn't a source of data, only
+		 * a trigger source internal to the device.
+		 */
 		for (j = 0; j < ARRAY_SIZE(channel_names); j++) {
 			ch = sr_channel_new(sdi, j, SR_CHANNEL_ANALOG, TRUE, channel_names[j]);
 			cg = g_malloc0(sizeof(struct sr_channel_group));
@@ -225,14 +245,12 @@ static int dev_open(struct sr_dev_inst *sdi)
 		libusb_get_device_descriptor(devlist[i], &des);
 
 		if (des.idVendor != HANTEK_5XXXB_USB_VENDOR ||
-		    des.idProduct != HANTEK_5XXXB_USB_PRODUCT)
+				des.idProduct != HANTEK_5XXXB_USB_PRODUCT)
 			continue;
 
 		if ((sdi->status == SR_ST_INITIALIZING) ||
 				(sdi->status == SR_ST_INACTIVE)) {
-			/*
-			 * Check device by its physical USB bus/port address.
-			 */
+			/* Check device by its physical USB bus/port address. */
 			if (usb_get_port_path(devlist[i], connection_id, sizeof(connection_id)) < 0)
 				continue;
 
