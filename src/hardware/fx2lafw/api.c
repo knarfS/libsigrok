@@ -121,6 +121,7 @@ static const uint32_t scanopts[] = {
 
 static const uint32_t drvopts[] = {
 	SR_CONF_LOGIC_ANALYZER,
+	SR_CONF_OSCILLOSCOPE,
 };
 
 static const uint32_t devopts[] = {
