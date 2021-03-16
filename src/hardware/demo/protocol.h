@@ -36,7 +36,7 @@
 #define ANALOG_BUFSIZE			4096
 /* This is a development feature: it starts a new frame every n samples. */
 #define SAMPLES_PER_FRAME		1000UL
-#define DEFAULT_LIMIT_FRAMES		0
+#define DEFAULT_LIMIT_FRAMES		10000
 
 #define DEFAULT_ANALOG_ENCODING_DIGITS	4
 #define DEFAULT_ANALOG_SPEC_DIGITS		4
