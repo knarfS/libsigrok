@@ -43,7 +43,7 @@ static const uint32_t devopts[] = {
 	SR_CONF_NUM_VDIV | SR_CONF_GET,
 	SR_CONF_NUM_HDIV | SR_CONF_GET,
 	SR_CONF_TIMEBASE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
-	SR_CONF_SAMPLERATE | SR_CONF_GET /*| SR_CONF_SET | SR_CONF_LIST*/,
+	SR_CONF_SAMPLERATE | SR_CONF_GET,
 	SR_CONF_TRIGGER_SOURCE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_TRIGGER_SLOPE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_TRIGGER_LEVEL | SR_CONF_GET | SR_CONF_SET,
@@ -64,36 +64,6 @@ static const uint32_t devopts_cg[] = {
 
 static const char *channel_names[] = {
 	"CH1", "CH2",
-};
-
-static const uint64_t samplerates[] = {
-	SR_HZ(5),
-	SR_HZ(10),
-	SR_HZ(25),
-	SR_HZ(50),
-	SR_HZ(100),
-	SR_HZ(250),
-	SR_HZ(500),
-	SR_KHZ(1),
-	SR_HZ(2500),
-	SR_KHZ(5),
-	SR_KHZ(10),
-	SR_KHZ(25),
-	SR_KHZ(50),
-	SR_KHZ(100),
-	SR_KHZ(250),
-	SR_KHZ(500),
-	SR_MHZ(1),
-	SR_KHZ(2500),
-	SR_MHZ(5),
-	SR_MHZ(10),
-	SR_MHZ(25),
-	SR_MHZ(50),
-	SR_MHZ(100),
-	SR_MHZ(200),
-	SR_MHZ(400),
-	SR_MHZ(800),
-	SR_GHZ(1),
 };
 
 static GSList *scan(struct sr_dev_driver *di, GSList *options)
@@ -372,12 +342,12 @@ static int config_get(uint32_t key, GVariant **data,
 			 * without menu.
 			 */
 			if (devc->in_sys_data->control_disp_menu)
-				*data = g_variant_new_int32(16); // TODO
+				*data = g_variant_new_int32(HANTEK_5XXXB_NUM_HDIV_MENU_ON);
 			else
-				*data = g_variant_new_int32(20); // TODO
+				*data = g_variant_new_int32(HANTEK_5XXXB_NUM_HDIV_MENU_OFF_INT);
 			break;
 		case SR_CONF_NUM_VDIV:
-			*data = g_variant_new_int32(HANTEK_5XXXB_NUM_VDIV);
+			*data = g_variant_new_int32(HANTEK_5XXXB_NUM_VDIV_INT);
 			break;
 		case SR_CONF_TIMEBASE:
 			*data = g_variant_new("(tt)",
@@ -489,6 +459,7 @@ static int config_set(uint32_t key, GVariant *data,
 	}
 
 	/*
+	 * TODO: See reLoad  Pro
 	 * Don't get the SysDATA when acquisition is running. SysDATA will be
 	 * catched by acquision anyways.
 	 */
@@ -610,9 +581,6 @@ static int config_list(uint32_t key, GVariant **data,
 			return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
 		case SR_CONF_TIMEBASE:
 			*data = std_gvar_tuple_array(ARRAY_AND_SIZE(win_timebase));
-			break;
-		case SR_CONF_SAMPLERATE:
-			*data = std_gvar_samplerates(ARRAY_AND_SIZE(samplerates));
 			break;
 		case SR_CONF_TRIGGER_SOURCE:
 			*data = g_variant_new_strv(ARRAY_AND_SIZE(trigger_source));
