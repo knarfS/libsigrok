@@ -329,7 +329,7 @@ static void send_df_chunk(const struct sr_dev_inst *sdi,
 	analog.meaning->channels = l;
 
 	vdiv = hantek_5xxxb_get_volts_per_div(sdi, channel_idx);
-	vdivlog = log10f(vdiv * 10.2 / 255); // HANTEK_5XXXB_NUM_VDIV; // TODO: exact value (10.2), 510 pixels?
+	vdivlog = log10f(vdiv * HANTEK_5XXXB_NUM_VDIV / 255);
 	//sr_err("send_df_chunk(): vdivlog = %f", vdivlog);
 	digits = -(int)vdivlog + (vdivlog < 0.0);
 	//sr_err("send_df_chunk(): digits = %i", digits);
@@ -352,44 +352,13 @@ static void send_df_chunk(const struct sr_dev_inst *sdi,
 SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 	const struct hantek_5xxxb_sys_data *sys_data)
 {
-	double num_hdiv;
-	uint32_t samples;
-	uint64_t samplerate, main_samplerate;
+	uint64_t samplerate;
 
-	// TODO: wrong samplerates for for timebase <= 80 ns. MemDepth? Channels? Menu?
-
-	if (sys_data->control_disp_menu)
-		num_hdiv = 16;
-	else
-		num_hdiv = 19.2;
-
-	sr_err("hantek_5xxxb_get_samplerate(): horiz_tb = %u", sys_data->horiz_tb);
-	sr_err("hantek_5xxxb_get_samplerate(): horiz_win_tb = %u", sys_data->horiz_win_tb);
-	sr_err("hantek_5xxxb_get_samplerate(): channels = %u", sys_data->vert_ch[0].disp & sys_data->vert_ch[1].disp);
-	sr_err("hantek_5xxxb_get_samplerate(): control_disp_menu = %u", sys_data->control_disp_menu);
-	sr_err("hantek_5xxxb_get_samplerate(): memory_depth_mapper = %u (%u)",
-		memory_depth_mapper[sys_data->acqurie_store_depth], sys_data->acqurie_store_depth);
-
-	samples = sample_count
+	samplerate = sample_rate
 		[sys_data->horiz_win_tb]
-		//[sys_data->horiz_tb]
 		[sys_data->vert_ch[0].disp & sys_data->vert_ch[1].disp]
-		[sys_data->control_disp_menu]
 		[memory_depth_mapper[sys_data->acqurie_store_depth]];
-	sr_err("hantek_5xxxb_get_samplerate(): sample count = %u", samples);
-
-
-	sr_err("hantek_5xxxb_get_samplerate(): main_timebase = %lu / %lu", main_timebase[sys_data->horiz_tb][0], main_timebase[sys_data->horiz_tb][1]);
-	main_samplerate = (uint64_t)(samples /
-		((main_timebase[sys_data->horiz_tb][0] /
-		(float)main_timebase[sys_data->horiz_tb][1]) * num_hdiv));
-	sr_err("hantek_5xxxb_get_samplerate(): main_samplerate = %lu", main_samplerate);
-
-	sr_err("hantek_5xxxb_get_samplerate(): win_timebase = %lu / %lu", win_timebase[sys_data->horiz_win_tb][0], win_timebase[sys_data->horiz_win_tb][1]);
-	samplerate = (uint64_t)(samples /
-		((win_timebase[sys_data->horiz_win_tb][0] /
-		(float)win_timebase[sys_data->horiz_win_tb][1]) * num_hdiv));
-	sr_err("hantek_5xxxb_get_samplerate(): win_samplerate = %lu", samplerate);
+	sr_err("hantek_5xxxb_get_samplerate(): samplerate = %lu", samplerate);
 
 	return samplerate;
 }
@@ -603,7 +572,8 @@ SR_PRIV int hantek_5xxxb_get_sample_data(const struct sr_dev_inst *sdi,
 		return ret;
 
 	/* Read sample data (status) packet */
-	ret = receive_bulk(sdi, in_buf, &in_size, 128, HANTEK_5XXXB_CMD_RD_SAMPLEDATA);
+	ret = receive_bulk(sdi, in_buf, &in_size, 128,
+		HANTEK_5XXXB_CMD_RD_SAMPLEDATA);
 	if (ret != SR_OK)
 		return ret;
 
@@ -780,13 +750,14 @@ SR_PRIV int hantek_5xxxb_receive_data(int fd, int revents, void *cb_data)
 			sr_session_send_meta(sdi, SR_CONF_SAMPLERATE,
 				g_variant_new_uint64(hantek_5xxxb_get_samplerate(sys_data)));
 		} else if (sys_data->control_disp_menu != devc->in_sys_data->control_disp_menu) {
-			/* TODO
+			/*
 			 * 16 DIV (640 pixels) with menu visible and 19.2 DIV (768 pixels)
 			 * without menu.
 			 */
 			sr_err("hantek_5xxxb_receive_data(): control_disp_menu = 0x%X", sys_data->control_disp_menu);
 			sr_session_send_meta(sdi, SR_CONF_NUM_HDIV,
-				g_variant_new_int32(sys_data->control_disp_menu ? 16 : 20));
+				g_variant_new_int32(sys_data->control_disp_menu
+					? HANTEK_5XXXB_NUM_HDIV_MENU_ON : HANTEK_5XXXB_NUM_HDIV_MENU_OFF_INT));
 			// TODO: samplerate??
 			sr_session_send_meta(sdi, SR_CONF_SAMPLERATE,
 				g_variant_new_uint64(hantek_5xxxb_get_samplerate(sys_data)));
