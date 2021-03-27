@@ -353,14 +353,84 @@ SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 	const struct hantek_5xxxb_sys_data *sys_data)
 {
 	uint64_t samplerate;
+	size_t sample_rate_array_idx;
 
+	sample_rate_array_idx =
+		hantek_5xxxb_get_sample_rate_array_index_from_sys_data(
+			sys_data->acqurie_store_depth);
 	samplerate = sample_rate
 		[sys_data->horiz_win_tb]
 		[sys_data->vert_ch[0].disp & sys_data->vert_ch[1].disp]
-		[memory_depth_mapper[sys_data->acqurie_store_depth]];
-	sr_err("hantek_5xxxb_get_samplerate(): samplerate = %lu", samplerate);
+		[sample_rate_array_idx];
 
 	return samplerate;
+}
+
+SR_PRIV void hantek_5xxxb_set_timebase(const struct sr_dev_inst *sdi,
+	int timebase_idx)
+{
+	struct dev_context *devc;
+	uint64_t samplerate;
+	size_t sample_rate_array_idx;
+
+	devc = sdi->priv;
+
+	sample_rate_array_idx =
+		hantek_5xxxb_get_sample_rate_array_index_from_sys_data(
+			devc->in_sys_data->acqurie_store_depth);
+	/* Check if the current memory depth is valide for the new timebase. */
+	samplerate = sample_rate
+		[devc->in_sys_data->horiz_win_tb]
+		[devc->in_sys_data->vert_ch[0].disp & devc->in_sys_data->vert_ch[1].disp]
+		[sample_rate_array_idx];
+	if (samplerate == 0) {
+		/* Current memory depth is not valide, set to fixed 512k TODO */
+		devc->out_sys_data->acqurie_store_depth =
+			hantek_5xxxb_get_store_depth_from_sample_rate_array_index(
+				sample_rate_array_idx - 1);
+	}
+
+	devc->out_sys_data->horiz_win_tb = (uint8_t)timebase_idx;
+}
+
+SR_PRIV uint64_t hantek_5xxxb_get_memory_depth_from_sys_data(
+	uint8_t store_depth)
+{
+	for (size_t i=0; i<ARRAY_SIZE(memory_depth_mapper); i++) {
+		if (memory_depth_mapper[i].sys_data_store_depth_map == store_depth)
+			return memory_depth_mapper[i].memory_depth;
+	}
+	return 0;
+}
+
+SR_PRIV uint8_t hantek_5xxxb_get_store_depth_from_memory_depth(
+	uint64_t memory_depth)
+{
+	for (size_t i=0; i<ARRAY_SIZE(memory_depth_mapper); i++) {
+		if (memory_depth_mapper[i].memory_depth == memory_depth)
+			return memory_depth_mapper[i].sys_data_store_depth_map;
+	}
+	return 0; // TODO
+}
+
+SR_PRIV uint8_t hantek_5xxxb_get_store_depth_from_sample_rate_array_index(
+	size_t sample_rate_array_index)
+{
+	for (size_t i=0; i<ARRAY_SIZE(memory_depth_mapper); i++) {
+		if (memory_depth_mapper[i].sample_rate_array_index_map == sample_rate_array_index)
+			return memory_depth_mapper[i].sys_data_store_depth_map;
+	}
+	return 0; // TODO
+}
+
+SR_PRIV size_t hantek_5xxxb_get_sample_rate_array_index_from_sys_data(
+	uint8_t store_depth)
+{
+	for (size_t i=0; i<ARRAY_SIZE(memory_depth_mapper); i++) {
+		if (memory_depth_mapper[i].sys_data_store_depth_map == store_depth)
+			return memory_depth_mapper[i].sample_rate_array_index_map;
+	}
+	return 0; // TODO
 }
 
 SR_PRIV float hantek_5xxxb_get_volts_per_div(const struct sr_dev_inst *sdi,

@@ -47,10 +47,10 @@ static const uint32_t devopts[] = {
 	SR_CONF_TRIGGER_SOURCE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_TRIGGER_SLOPE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_TRIGGER_LEVEL | SR_CONF_GET | SR_CONF_SET,
+	SR_CONF_BUFFERSIZE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	/*
 	// 0 -> all post-trigger, 100 -> all pre-trigger, 50 -> middle (scopes default)
 	SR_CONF_CAPTURE_RATIO | SR_CONF_GET | SR_CONF_SET,
-	SR_CONF_BUFFERSIZE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	*/
 };
 
@@ -64,6 +64,13 @@ static const uint32_t devopts_cg[] = {
 
 static const char *channel_names[] = {
 	"CH1", "CH2",
+};
+
+static const uint64_t buffersizes[] = {
+	(4 * 1024),        /* 4k */
+	(40 * 1024),       /* 40k */
+	(512 * 1024),      /* 512k */
+	(1 * 1024 * 1024), /* 1M */
 };
 
 static GSList *scan(struct sr_dev_driver *di, GSList *options)
@@ -377,10 +384,12 @@ static int config_get(uint32_t key, GVariant **data,
 				devc->in_sys_data->trig_vpos, vdiv, ch_idx);
 			*data = g_variant_new_double(trigger_lvl);
 			break;
-		/*
 		case SR_CONF_BUFFERSIZE:
-			*data = g_variant_new_uint64(devc->framesize);
+			*data = g_variant_new_uint64(
+				hantek_5xxxb_get_memory_depth_from_sys_data(
+					devc->in_sys_data->acqurie_store_depth));
 			break;
+		/*
 		case SR_CONF_CAPTURE_RATIO:
 			*data = g_variant_new_uint64(devc->capture_ratio);
 			break;
@@ -476,7 +485,7 @@ static int config_set(uint32_t key, GVariant *data,
 				ret = SR_ERR_ARG;
 				goto done;
 			}
-			devc->out_sys_data->horiz_win_tb = (uint8_t)idx;
+			hantek_5xxxb_set_timebase(sdi, idx);
 			break;
 		case SR_CONF_TRIGGER_SOURCE:
 			if ((idx = std_str_idx(data, ARRAY_AND_SIZE(trigger_source))) < 0) {
@@ -501,6 +510,11 @@ static int config_set(uint32_t key, GVariant *data,
 			vdiv = hantek_5xxxb_get_volts_per_div(sdi, ch_idx);
 			devc->out_sys_data->trig_vpos = hantek_5xxxb_get_vert_pos_from_value(
 				sdi, g_variant_get_double(data), vdiv, ch_idx);
+			break;
+		case SR_CONF_BUFFERSIZE:
+			devc->out_sys_data->acqurie_store_depth =
+				hantek_5xxxb_get_store_depth_from_memory_depth(
+					g_variant_get_uint64(data));
 			break;
 		default:
 			ret = SR_ERR_ARG;
@@ -588,14 +602,9 @@ static int config_list(uint32_t key, GVariant **data,
 		case SR_CONF_TRIGGER_SLOPE:
 			*data = g_variant_new_strv(ARRAY_AND_SIZE(trigger_slope));
 			break;
-		/*
 		case SR_CONF_BUFFERSIZE:
-			if (!sdi)
-				return SR_ERR_ARG;
-			devc = sdi->priv;
-			*data = std_gvar_array_u64(devc->profile->buffersizes, NUM_BUFFER_SIZES);
+			*data = std_gvar_array_u64(ARRAY_AND_SIZE(buffersizes));
 			break;
-		*/
 		default:
 			return SR_ERR_NA;
 		}
