@@ -55,7 +55,7 @@
 /** 510 pixels */
 #define HANTEK_5XXXB_NUM_VDIV               10.2
 /** TODO */
-#define HANTEK_5XXXB_NUM_VDIV_INT           10
+#define HANTEK_5XXXB_NUM_VDIV_INT           11
 /** 640 pixels */
 #define HANTEK_5XXXB_NUM_HDIV_MENU_ON       16
 /** 768 pixels */
@@ -145,14 +145,16 @@ static const uint64_t ch_vdiv[][11][2] = {
 };
 
 static const char *ch_coupling[] = {
-	"AC", "DC", "GND",
+	"AC",  /* 0x00 */
+	"DC",  /* 0x01 */
+	"GND", /* 0x02 */
 };
 
 static const uint64_t probe_factor[] = {
-	1,
-	10,
-	100,
-	1000,
+	1,    /* 0x00 */
+	10,   /* 0x01 */
+	100,  /* 0x02 */
+	1000, /* 0x03 */
 };
 
 static const uint64_t main_timebase[][2] = {
@@ -163,7 +165,7 @@ static const uint64_t main_timebase[][2] = {
 	{ 200, 1000000000 }, /* 0x03 */
 	{ 200, 1000000000 }, /* 0x04 */
 	{ 200, 1000000000 }, /* 0x05 */
-	{ 200, 1000000000 }, /* 0x06 KK */
+	{ 200, 1000000000 }, /* 0x06 */
 	{ 400, 1000000000 }, /* 0x07 */
 	{ 800, 1000000000 }, /* 0x08 */
 	/* microseonds */
@@ -233,25 +235,43 @@ static const uint64_t win_timebase[][2] = {
 	{ 40, 1 },           /* 0x1F */
 };
 
-// TODO
-static const int memory_depth_mapper[] = {
-	0,  /* 4k */
-	-1, /* - */
-	-1, //1,  /* 20k */ // TODO
-	-1, /* - */
-	1, //2,  /* 40k */ // TODO
-	-1, /* - */
-	2, //3,  /* 512k */ // TODO
-	3, //4,  /* 1M */
-	/* TODO: 0xFF: 2M */ // TODO
+/**
+ * Maps the memory depth to sys_data store_depth value and to the index of
+ * the sample_rate array.
+ */
+static const struct {
+	uint64_t memory_depth;
+	uint8_t sys_data_store_depth_map;
+	size_t sample_rate_array_index_map;
+} memory_depth_mapper[] = {
+	/* 4k */
+	{ (4 * 1024),        0x00, 0 },
+	/* 40k */
+	{ (40 * 1024),       0x04, 1 },
+	/* 512k */
+	{ (512 * 1024),      0x06, 2 },
+	/* 1M */
+	{ (1 * 1024 * 1024), 0x07, 3 },
+	/* 20k is probably only valid for Tekway DST3xxxB models, but it's not used
+	 * in this driver.*/
+	/* { (20 * 1024),       0x02, 4 }, */
+	/* 2M is on Handhelds, no idea what BM/BMV bench models are using for this,
+	 * Tinman assumes it can be 0x08, but it's not used in this driver. */
+	/* { (2 * 1024 * 1024), 0xFF, 5 }, */
 };
 
 static const char *trigger_source[] = {
-	"CH1", "CH2", "Ext", "Ext/5", "AC Line",
+	"CH1",     /* 0x00 */
+	"CH2",     /* 0x01 */
+	"Ext",     /* 0x02 */
+	"Ext/5",   /* 0x03 */
+	"AC Line", /* 0x04 */
 };
 
 static const char *trigger_slope[] = {
-	"r", "f", "r+f"
+	"r",   /* 0x00 */
+	"f",   /* 0x01 */
+	"r+f", /* 0x02 */
 };
 
 /* [timebase][ch2][disp menu][memory depth] */
@@ -520,6 +540,18 @@ struct dev_context {
 
 SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 	const struct hantek_5xxxb_sys_data *sys_data);
+SR_PRIV void hantek_5xxxb_set_timebase(const struct sr_dev_inst *sdi,
+	int timebase_idx);
+
+SR_PRIV uint64_t hantek_5xxxb_get_memory_depth_from_sys_data(
+	uint8_t store_depth);
+SR_PRIV uint8_t hantek_5xxxb_get_store_depth_from_memory_depth(
+	uint64_t memory_depth);
+SR_PRIV uint8_t hantek_5xxxb_get_store_depth_from_sample_rate_array_index(
+	size_t sample_rate_array_index);
+SR_PRIV size_t hantek_5xxxb_get_sample_rate_array_index_from_sys_data(
+	uint8_t store_depth);
+
 SR_PRIV float hantek_5xxxb_get_volts_per_div(const struct sr_dev_inst *sdi,
 	int channel_idx);
 SR_PRIV float hantek_5xxxb_get_value_from_vert_pos(
