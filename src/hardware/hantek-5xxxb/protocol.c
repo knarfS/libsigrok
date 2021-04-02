@@ -354,14 +354,34 @@ SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 {
 	uint64_t samplerate;
 	size_t sample_rate_array_idx;
+	double num_hdiv;
+	uint32_t samples;
 
 	sample_rate_array_idx =
 		hantek_5xxxb_get_sample_rate_array_index_from_sys_data(
 			sys_data->acqurie_store_depth);
+
+	/* This would return the correct sample rate of the scope, but it wouldn't
+	 * match the time stride of the actual samples
 	samplerate = sample_rate
 		[sys_data->horiz_win_tb]
 		[sys_data->vert_ch[0].disp & sys_data->vert_ch[1].disp]
 		[sample_rate_array_idx];
+	*/
+
+	if (sys_data->control_disp_menu)
+		num_hdiv = HANTEK_5XXXB_NUM_HDIV_MENU_ON;
+	else
+		num_hdiv = HANTEK_5XXXB_NUM_HDIV_MENU_OFF;
+
+	samples = sample_count
+			[sys_data->horiz_win_tb]
+			[sys_data->vert_ch[0].disp & sys_data->vert_ch[1].disp]
+			[sys_data->control_disp_menu]
+			[sample_rate_array_idx];
+	samplerate = (uint64_t)(samples /
+			((win_timebase[sys_data->horiz_win_tb][0] /
+			(float)win_timebase[sys_data->horiz_win_tb][1]) * num_hdiv));
 
 	return samplerate;
 }
