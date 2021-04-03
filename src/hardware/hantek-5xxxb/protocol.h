@@ -83,7 +83,6 @@ enum vertical_base {
 	VB_5V    = 0x0A,
 };
 
-// TODO: i don't like...
 /* [probe factor][][] */
 static const uint64_t ch_vdiv[][11][2] = {
 	/* Probe x1 */
