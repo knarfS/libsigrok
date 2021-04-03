@@ -733,6 +733,8 @@ SR_PRIV int hantek_5xxxb_receive_data(int fd, int revents, void *cb_data)
 	int ret, cmp_result, ch_idx;
 	uint8_t vb_idx, probe_idx;
 	double vdiv, trigger_lvl;
+	double trigger_hpos;
+	uint64_t buffersize;
 
 	(void)fd;
 	(void)revents;
@@ -827,6 +829,12 @@ SR_PRIV int hantek_5xxxb_receive_data(int fd, int revents, void *cb_data)
 			sr_err("hantek_5xxxb_receive_data(): trig_vpos = 0x%X", sys_data->trig_vpos);
 			sr_session_send_meta(sdi, SR_CONF_TRIGGER_LEVEL,
 				g_variant_new_double(trigger_lvl));
+		} else if (sys_data->horiz_trigtime != devc->in_sys_data->horiz_trigtime) {
+			sr_err("hantek_5xxxb_receive_data():  = %li", sys_data->horiz_trigtime);
+			/* Trigger pos is in ps (1e12) */
+			trigger_hpos = (double)sys_data->horiz_trigtime / 1e12;
+			sr_session_send_meta(sdi, SR_CONF_HORIZ_TRIGGERPOS,
+				g_variant_new_double(trigger_hpos));
 		}
 
 		/* Check horizontal settings. */
@@ -851,6 +859,19 @@ SR_PRIV int hantek_5xxxb_receive_data(int fd, int revents, void *cb_data)
 			// TODO: samplerate??
 			sr_session_send_meta(sdi, SR_CONF_SAMPLERATE,
 				g_variant_new_uint64(hantek_5xxxb_get_samplerate(sys_data)));
+		} else if (sys_data->acqurie_store_depth != devc->in_sys_data->acqurie_store_depth) {
+			sr_err("hantek_5xxxb_receive_data(): acqurie_store_depth = 0x%X", sys_data->acqurie_store_depth);
+
+			/* TODO combine with function hantek_5xxxb_get_memory_depth_from_sys_data() */
+			buffersize = 0;
+			for (size_t i=0; i<ARRAY_SIZE(memory_depth_mapper); i++) {
+				if (memory_depth_mapper[i].sys_data_store_depth_map == sys_data->acqurie_store_depth) {
+					buffersize = memory_depth_mapper[i].memory_depth;
+					break;
+				}
+			}
+			sr_session_send_meta(sdi, SR_CONF_BUFFERSIZE,
+				g_variant_new_uint64(buffersize));
 		}
 
 		/* Set changed SysDATA to device instance */

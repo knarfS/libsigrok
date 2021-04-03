@@ -542,10 +542,13 @@ SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 SR_PRIV void hantek_5xxxb_set_timebase(const struct sr_dev_inst *sdi,
 	int timebase_idx);
 
+/* TODO Rename to buffersize */
 SR_PRIV uint64_t hantek_5xxxb_get_memory_depth_from_sys_data(
 	uint8_t store_depth);
+/* TODO Rename to buffersize */
 SR_PRIV uint8_t hantek_5xxxb_get_store_depth_from_memory_depth(
 	uint64_t memory_depth);
+/* TODO Rename to buffersize */
 SR_PRIV uint8_t hantek_5xxxb_get_store_depth_from_sample_rate_array_index(
 	size_t sample_rate_array_index);
 SR_PRIV size_t hantek_5xxxb_get_sample_rate_array_index_from_sys_data(

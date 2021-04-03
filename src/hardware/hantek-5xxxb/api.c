@@ -47,13 +47,8 @@ static const uint32_t devopts[] = {
 	SR_CONF_TRIGGER_SOURCE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_TRIGGER_SLOPE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_TRIGGER_LEVEL | SR_CONF_GET | SR_CONF_SET,
+	SR_CONF_HORIZ_TRIGGERPOS | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_BUFFERSIZE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
-	/* TODO
-	// 0 -> all post-trigger, 100 -> all pre-trigger, 50 -> middle (scopes default)
-	SR_CONF_CAPTURE_RATIO | SR_CONF_GET | SR_CONF_SET,
-	// Alternatively:
-	SR_CONF_HORIZ_TRIGGERPOS | SR_CONF_GET | SR_CONF_SET,
-	*/
 	/* TODO
 	SR_CONF_AVERAGING | SR_CONF_GET | SR_CONF_SET,
 	SR_CONF_AVG_SAMPLES | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
@@ -318,7 +313,7 @@ static int config_get(uint32_t key, GVariant **data,
 	int ch_idx;
 	int ret;
 	uint8_t vb, probe_idx;
-	float vdiv, trigger_lvl;
+	float vdiv, trigger_lvl, trigger_hpos;
 
 	if (!sdi)
 		return SR_ERR_ARG;
@@ -394,16 +389,16 @@ static int config_get(uint32_t key, GVariant **data,
 				devc->in_sys_data->trig_vpos, vdiv, ch_idx);
 			*data = g_variant_new_double(trigger_lvl);
 			break;
+		case SR_CONF_HORIZ_TRIGGERPOS:
+			/* Trigger pos is in ps (1e12) */
+			trigger_hpos = (double)devc->in_sys_data->horiz_trigtime / 1e12;
+			*data = g_variant_new_double(trigger_hpos);
+			break;
 		case SR_CONF_BUFFERSIZE:
 			*data = g_variant_new_uint64(
 				hantek_5xxxb_get_memory_depth_from_sys_data(
 					devc->in_sys_data->acqurie_store_depth));
 			break;
-		/*
-		case SR_CONF_CAPTURE_RATIO:
-			*data = g_variant_new_uint64(devc->capture_ratio);
-			break;
-		*/
 		default:
 			ret = SR_ERR_NA;
 			goto done;
@@ -521,6 +516,12 @@ static int config_set(uint32_t key, GVariant *data,
 			devc->out_sys_data->trig_vpos = hantek_5xxxb_get_vert_pos_from_value(
 				sdi, g_variant_get_double(data), vdiv, ch_idx);
 			break;
+		case SR_CONF_HORIZ_TRIGGERPOS:
+			/* horiz_trigtime is in ps (1e12) */
+			/* TODO: check min (max memory / timebase * 10) / max (10s) */
+			devc->out_sys_data->horiz_trigtime =
+				g_variant_get_double(data) * 1e12;
+			break;
 		case SR_CONF_BUFFERSIZE:
 			devc->out_sys_data->acqurie_store_depth =
 				hantek_5xxxb_get_store_depth_from_memory_depth(
@@ -611,6 +612,10 @@ static int config_list(uint32_t key, GVariant **data,
 			break;
 		case SR_CONF_TRIGGER_SLOPE:
 			*data = g_variant_new_strv(ARRAY_AND_SIZE(trigger_slope));
+			break;
+		case SR_CONF_HORIZ_TRIGGERPOS:
+			/* NOTE: This are estimated values! */
+			*data = std_gvar_min_max_step(-1, 1, 1e-9);
 			break;
 		case SR_CONF_BUFFERSIZE:
 			*data = std_gvar_array_u64(ARRAY_AND_SIZE(buffersizes));
