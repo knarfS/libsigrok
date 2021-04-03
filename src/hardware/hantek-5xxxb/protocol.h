@@ -69,6 +69,12 @@ enum states {
 	STOPPING,
 };
 
+enum acquisition_mode {
+	ACQ_MODE_NORMAL       = 0x00,
+	ACQ_MODE_PEAK_TO_PEAK = 0x01,
+	ACQ_MODE_AVG          = 0x02,
+};
+
 enum vertical_base {
 	VB_2MV   = 0x00,
 	VB_5MV   = 0x01,
@@ -244,19 +250,19 @@ static const struct {
 	size_t sample_rate_array_index_map;
 } memory_depth_mapper[] = {
 	/* 4k */
-	{ (4 * 1024),        0x00, 0 },
+	{ (4 * 1000),        0x00, 0 },
 	/* 40k */
-	{ (40 * 1024),       0x04, 1 },
+	{ (40 * 1000),       0x04, 1 },
 	/* 512k */
-	{ (512 * 1024),      0x06, 2 },
+	{ (512 * 1000),      0x06, 2 },
 	/* 1M */
-	{ (1 * 1024 * 1024), 0x07, 3 },
+	{ (1 * 1000 * 1000), 0x07, 3 },
 	/* 20k is probably only valid for Tekway DST3xxxB models, but it's not used
 	 * in this driver.*/
-	/* { (20 * 1024),       0x02, 4 }, */
+	/* { (20 * 1000),       0x02, 4 }, */
 	/* 2M is on Handhelds, no idea what BM/BMV bench models are using for this,
 	 * Tinman assumes it can be 0x08, but it's not used in this driver. */
-	/* { (2 * 1024 * 1024), 0xFF, 5 }, */
+	/* { (2 * 1000 * 1000), 0xFF, 5 }, */
 };
 
 static const char *trigger_source[] = {
@@ -271,6 +277,15 @@ static const char *trigger_slope[] = {
 	"r",   /* 0x00 */
 	"f",   /* 0x01 */
 	"r+f", /* 0x02 */
+};
+
+static const uint64_t average_count[] = {
+	4,   /* 0x00 */
+	8,   /* 0x01 */
+	16,  /* 0x02 */
+	32,  /* 0x03 */
+	64,  /* 0x04 */
+	128, /* 0x05 */
 };
 
 /* [timebase][ch2][disp menu][memory depth] */
@@ -450,7 +465,7 @@ struct __attribute__((packed)) hantek_5xxxb_sys_data {
 	uint8_t horiz_tb;
 	uint8_t horiz_win_tb;
 	uint8_t horiz_win_state;
-	int64_t horiz_trigtime; // TODO: == SR_CONF_HORIZ_TRIGGERPOS ???
+	int64_t horiz_trigtime;
 
 	/* Math */
 	uint8_t math_disp;
@@ -470,7 +485,7 @@ struct __attribute__((packed)) hantek_5xxxb_sys_data {
 	uint8_t display_grid_bright;
 	uint8_t display_maxgrid_bright;
 
-	/* Aquire. NOTE: Misspelling is also in the docs */
+	/* Aquire. NOTE: Misspelling is also in the Protocol.inf */
 	uint8_t acqurie_mode;
 	uint8_t acqurie_avg_cnt;
 	uint8_t acqurie_type;
