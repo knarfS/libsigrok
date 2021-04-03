@@ -48,9 +48,19 @@ static const uint32_t devopts[] = {
 	SR_CONF_TRIGGER_SLOPE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_TRIGGER_LEVEL | SR_CONF_GET | SR_CONF_SET,
 	SR_CONF_BUFFERSIZE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
-	/*
+	/* TODO
 	// 0 -> all post-trigger, 100 -> all pre-trigger, 50 -> middle (scopes default)
 	SR_CONF_CAPTURE_RATIO | SR_CONF_GET | SR_CONF_SET,
+	// Alternatively:
+	SR_CONF_HORIZ_TRIGGERPOS | SR_CONF_GET | SR_CONF_SET,
+	*/
+	/* TODO
+	SR_CONF_AVERAGING | SR_CONF_GET | SR_CONF_SET,
+	SR_CONF_AVG_SAMPLES | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
+	*/
+	/*
+	SR_CONF_TRIGGER_MATCH, // Was das?
+	SR_CONF_SWAP, // Swapping channels?
 	*/
 };
 
@@ -540,7 +550,6 @@ static int config_set(uint32_t key, GVariant *data,
 				g_variant_get_boolean(data);
 			break;
 		case SR_CONF_VDIV:
-			// TODO: Not working with probe factor 1000x -> config_list also wrong
 			probe_idx = devc->in_sys_data->vert_ch[ch_idx].probe;
 			if ((idx = std_u64_tuple_idx(data, ARRAY_AND_SIZE(ch_vdiv[probe_idx]))) < 0) {
 				ret = SR_ERR_ARG;
@@ -581,6 +590,7 @@ static int config_list(uint32_t key, GVariant **data,
 	struct dev_context *devc;
 	int ch_idx;
 	uint8_t probe_idx;
+	gboolean locked;
 
 	// TODO: sdi is not available for "sigrok-cli --continuous"
 	//if (!sdi)
@@ -624,8 +634,23 @@ static int config_list(uint32_t key, GVariant **data,
 			*data = g_variant_new_strv(ARRAY_AND_SIZE(ch_coupling));
 			break;
 		case SR_CONF_VDIV:
-			probe_idx = devc->in_sys_data->vert_ch[ch_idx].probe; // TODO, get? mutex?, ...
+			/*
+			 * TODO: See reLoad  Pro
+			 * Don't get the SysDATA when acquisition is running. SysDATA will be
+			 * catched by acquision anyways.
+			 */
+			/* TODO: I don't like... */
+			if (devc->dev_state != CAPTURE) {
+				g_mutex_lock(&devc->rw_mutex);
+				locked = TRUE;
+				hantek_5xxxb_get_sys_data(sdi, devc->in_sys_data);
+			} else
+				locked = FALSE;
+
+			probe_idx = devc->in_sys_data->vert_ch[ch_idx].probe;
 			*data = std_gvar_tuple_array(ARRAY_AND_SIZE(ch_vdiv[probe_idx]));
+			if (locked)
+				g_mutex_unlock(&devc->rw_mutex);
 			break;
 		case SR_CONF_PROBE_FACTOR:
 			*data = std_gvar_array_u64(ARRAY_AND_SIZE(probe_factor));
