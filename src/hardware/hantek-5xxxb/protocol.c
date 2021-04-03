@@ -872,6 +872,13 @@ SR_PRIV int hantek_5xxxb_receive_data(int fd, int revents, void *cb_data)
 			}
 			sr_session_send_meta(sdi, SR_CONF_BUFFERSIZE,
 				g_variant_new_uint64(buffersize));
+			// TODO: samplerate??
+		} else if (sys_data->acqurie_mode != devc->in_sys_data->acqurie_mode) {
+			sr_session_send_meta(sdi, SR_CONF_AVERAGING,
+				g_variant_new_boolean(sys_data->acqurie_mode == ACQ_MODE_AVG));
+		} else if (sys_data->acqurie_avg_cnt != devc->in_sys_data->acqurie_avg_cnt) {
+			sr_session_send_meta(sdi, SR_CONF_AVG_SAMPLES,
+				g_variant_new_uint64(average_count[sys_data->acqurie_avg_cnt]));
 		}
 
 		/* Set changed SysDATA to device instance */

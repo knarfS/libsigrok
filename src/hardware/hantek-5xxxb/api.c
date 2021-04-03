@@ -49,14 +49,8 @@ static const uint32_t devopts[] = {
 	SR_CONF_TRIGGER_LEVEL | SR_CONF_GET | SR_CONF_SET,
 	SR_CONF_HORIZ_TRIGGERPOS | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_BUFFERSIZE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
-	/* TODO
 	SR_CONF_AVERAGING | SR_CONF_GET | SR_CONF_SET,
 	SR_CONF_AVG_SAMPLES | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
-	*/
-	/*
-	SR_CONF_TRIGGER_MATCH, // Was das?
-	SR_CONF_SWAP, // Swapping channels?
-	*/
 };
 
 static const uint32_t devopts_cg[] = {
@@ -72,10 +66,10 @@ static const char *channel_names[] = {
 };
 
 static const uint64_t buffersizes[] = {
-	(4 * 1024),        /* 4k */
-	(40 * 1024),       /* 40k */
-	(512 * 1024),      /* 512k */
-	(1 * 1024 * 1024), /* 1M */
+	(4 * 1000),        /* 4k */
+	(40 * 1000),       /* 40k */
+	(512 * 1000),      /* 512k */
+	(1 * 1000 * 1000), /* 1M */
 };
 
 static GSList *scan(struct sr_dev_driver *di, GSList *options)
@@ -399,6 +393,14 @@ static int config_get(uint32_t key, GVariant **data,
 				hantek_5xxxb_get_memory_depth_from_sys_data(
 					devc->in_sys_data->acqurie_store_depth));
 			break;
+		case SR_CONF_AVERAGING:
+			*data = g_variant_new_boolean(
+				devc->in_sys_data->acqurie_mode == ACQ_MODE_AVG);
+			break;
+		case SR_CONF_AVG_SAMPLES:
+			*data = g_variant_new_uint64(
+				average_count[devc->in_sys_data->acqurie_avg_cnt]);
+			break;
 		default:
 			ret = SR_ERR_NA;
 			goto done;
@@ -527,6 +529,19 @@ static int config_set(uint32_t key, GVariant *data,
 				hantek_5xxxb_get_store_depth_from_memory_depth(
 					g_variant_get_uint64(data));
 			break;
+		case SR_CONF_AVERAGING:
+			/* TODO: Check for SR_CONF_BUFFERSIZE */
+			devc->out_sys_data->acqurie_mode =
+				g_variant_get_boolean(data) ? ACQ_MODE_AVG : ACQ_MODE_NORMAL;
+			break;
+		case SR_CONF_AVG_SAMPLES:
+			/* TODO: Check for SR_CONF_BUFFERSIZE */
+			if ((idx = std_u64_idx(data, ARRAY_AND_SIZE(average_count))) < 0) {
+				ret = SR_ERR_ARG;
+				goto done;
+			}
+			devc->out_sys_data->acqurie_avg_cnt = (uint8_t)idx;
+			break;
 		default:
 			ret = SR_ERR_ARG;
 			goto done;
@@ -594,6 +609,7 @@ static int config_list(uint32_t key, GVariant **data,
 	gboolean locked;
 
 	// TODO: sdi is not available for "sigrok-cli --continuous"
+	// TODO: SR_CONF_HORIZ_TRIGGERPOS with some devc will SegFault
 	//if (!sdi)
 	//	return SR_ERR_ARG;
 
@@ -614,11 +630,16 @@ static int config_list(uint32_t key, GVariant **data,
 			*data = g_variant_new_strv(ARRAY_AND_SIZE(trigger_slope));
 			break;
 		case SR_CONF_HORIZ_TRIGGERPOS:
-			/* NOTE: This are estimated values! */
+			/* TODO: This are estimated values! */
 			*data = std_gvar_min_max_step(-1, 1, 1e-9);
 			break;
 		case SR_CONF_BUFFERSIZE:
+			/* TODO: Depending on SR_CONF_AVERAGING and SR_CONF_TIMEBASE */
 			*data = std_gvar_array_u64(ARRAY_AND_SIZE(buffersizes));
+			break;
+		case SR_CONF_AVG_SAMPLES:
+			/* TODO: Depending on SR_CONF_BUFFERSIZE */
+			*data = std_gvar_array_u64(ARRAY_AND_SIZE(average_count));
 			break;
 		default:
 			return SR_ERR_NA;
