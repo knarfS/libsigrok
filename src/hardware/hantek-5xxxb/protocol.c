@@ -342,7 +342,7 @@ static void send_df_chunk(const struct sr_dev_inst *sdi,
 		((float *)analog.data)[i] = hantek_5xxxb_get_value_from_vert_pos(
 			sdi, (int8_t)*(buf + i), vdiv, channel_idx);
 	}
-	sr_err("send_df_chunk(): send %i samples", num_samples);
+	//sr_err("send_df_chunk(): send %i samples", num_samples);
 	sr_session_send(sdi, &packet);
 	g_slist_free(analog.meaning->channels);
 
