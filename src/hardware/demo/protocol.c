@@ -24,6 +24,7 @@
 #include <config.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <math.h>
 #include <libsigrok/libsigrok.h>
 #include "libsigrok-internal.h"
@@ -586,12 +587,16 @@ SR_PRIV int demo_prepare_data(int fd, int revents, void *cb_data)
 	int64_t elapsed_us, limit_us, todo_us;
 	int64_t trigger_offset;
 	int pre_trigger_samples;
+	struct timespec ts;
 
 	(void)fd;
 	(void)revents;
 
 	sdi = cb_data;
 	devc = sdi->priv;
+
+	ts.tv_sec = 100 / 1000;
+	ts.tv_nsec = (100 % 1000) * 1000000;
 
 	/* Just in case. */
 	if (devc->cur_samplerate <= 0
@@ -703,6 +708,7 @@ SR_PRIV int demo_prepare_data(int fd, int revents, void *cb_data)
 				send_analog_packet(value, sdi, &analog_sent,
 						devc->sent_samples + analog_done,
 						samples_todo - analog_done);
+				nanosleep(&ts, &ts);
 			}
 			analog_done += analog_sent;
 		}
