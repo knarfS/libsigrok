@@ -42,6 +42,11 @@
 #define DEFAULT_ANALOG_SPEC_DIGITS		4
 #define DEFAULT_ANALOG_AMPLITUDE		10
 #define DEFAULT_ANALOG_OFFSET			0.
+/*
+ * This defines how much random noise is added to an analog signal in relation
+ * to its amplitude.
+ */
+#define DEFAULT_ANALOG_NOISE			0.
 
 /* Logic patterns we can generate. */
 enum logic_pattern_type {
