@@ -1,11 +1,6 @@
 /*
  * This file is part of the libsigrok project.
  *
- * This driver is based on the protocol description made by tinman,
- * from the mikrocontroller.net and eevblog.com forums:
- * https://www.mikrocontroller.net/articles/Hantek_Protokoll
- * https://elinux.org/Das_Oszi_Protocol
- *
  * Copyright (C) 2018-2021 Frank Stettner <frank-stettner@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,6 +15,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
+ * This driver is based on the protocol description made by tinman,
+ * from the mikrocontroller.net and eevblog.com forums:
+ * https://www.mikrocontroller.net/articles/Hantek_Protokoll
+ * https://elinux.org/Das_Oszi_Protocol
  */
 
 #include <config.h>
@@ -484,7 +485,7 @@ SR_PRIV float hantek_5xxxb_get_volts_per_div(const struct sr_dev_inst *sdi,
 
 /**
  * The sample data / trigger position are post-processed from the image memory.
- * The span is 10.2 DIV vertical (-127 to 127, 510 pixels), that equals
+ * The span is 10.2 DIV vertical (-127 to 127, 510 pixels), that equals to
  * 25 steps per DIV.
  */
 SR_PRIV float hantek_5xxxb_get_value_from_vert_pos(
