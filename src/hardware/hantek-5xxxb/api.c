@@ -1,11 +1,6 @@
 /*
  * This file is part of the libsigrok project.
  *
- * This driver is based on the protocol description made by tinman,
- * from the mikrocontroller.net and eevblog.com forums:
- * https://www.mikrocontroller.net/articles/Hantek_Protokoll
- * https://elinux.org/Das_Oszi_Protocol
- *
  * Copyright (C) 2018-2021 Frank Stettner <frank-stettner@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,6 +15,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
+ * This driver is based on the protocol description made by tinman,
+ * from the mikrocontroller.net and eevblog.com forums:
+ * https://www.mikrocontroller.net/articles/Hantek_Protokoll
+ * https://elinux.org/Das_Oszi_Protocol
  */
 
 #include <config.h>
@@ -318,7 +319,7 @@ static int config_get(uint32_t key, GVariant **data,
 	devc = sdi->priv;
 	usb = sdi->conn;
 
-	/* Handle config keys that doesn't need the SysDATA */
+	/* Handle config keys that don't need the SysDATA */
 	switch (key) {
 	case SR_CONF_LIMIT_SAMPLES:
 	case SR_CONF_LIMIT_FRAMES:
@@ -466,7 +467,7 @@ static int config_set(uint32_t key, GVariant *data,
 
 	devc = sdi->priv;
 
-	/* Handle config keys that doesn't need the SysDATA */
+	/* Handle config keys that don't need the SysDATA */
 	switch (key) {
 	case SR_CONF_LIMIT_SAMPLES:
 	case SR_CONF_LIMIT_FRAMES:
