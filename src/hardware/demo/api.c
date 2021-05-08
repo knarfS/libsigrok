@@ -24,6 +24,7 @@
 #include <config.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <math.h>
 #include <libsigrok/libsigrok.h>
 #include "libsigrok-internal.h"
@@ -528,6 +529,9 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 		}
 	}
 	devc->trigger_fired = FALSE;
+
+	/* Seed the random generator with the current time. */
+	srand(time(0));
 
 	/*
 	 * Determine the numbers of logic and analog channels that are

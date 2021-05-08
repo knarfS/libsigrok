@@ -410,6 +410,7 @@ static void send_analog_packet(struct analog_gen *ag,
 	int ag_pattern_pos;
 	unsigned int i;
 	float amplitude, offset, value;
+	float rnd_min, rnd_max;
 	float *data;
 
 	if (!ag->ch || !ag->ch->enabled)
@@ -500,10 +501,11 @@ static void send_analog_packet(struct analog_gen *ag,
 		sending_now = MIN(analog_todo, pattern->num_samples - ag_pattern_pos);
 		if (ag->amplitude != DEFAULT_ANALOG_AMPLITUDE ||
 			ag->offset != DEFAULT_ANALOG_OFFSET ||
-			ag->pattern == PATTERN_ANALOG_RANDOM) {
+			ag->pattern == PATTERN_ANALOG_RANDOM ||
+			DEFAULT_ANALOG_NOISE > .0) {
 			/*
-			 * Amplitude or offset changed (or we are generating
-			 * random data), modify each sample.
+			 * Amplitude or offset has changed, we are generating random data
+			 * or we are adding noise to the samples: Modify each sample.
 			 */
 			if (ag->pattern == PATTERN_ANALOG_RANDOM) {
 				amplitude = ag->amplitude / 500.0;
@@ -512,12 +514,21 @@ static void send_analog_packet(struct analog_gen *ag,
 				amplitude = ag->amplitude / DEFAULT_ANALOG_AMPLITUDE;
 				offset = ag->offset - DEFAULT_ANALOG_OFFSET;
 			}
+			/* Calculate boundaries for the random noise. */
+			rnd_max = (amplitude * DEFAULT_ANALOG_NOISE) / 2;
+			rnd_min = -1 * rnd_max;
 			data = ag->packet.data;
 			for (i = 0; i < sending_now; i++) {
 				if (ag->pattern == PATTERN_ANALOG_RANDOM)
 					data[i] = (rand() % 1000) * amplitude + offset;
-				else
-					data[i] = pattern->data[ag_pattern_pos + i] * amplitude + offset;
+				else {
+					value =
+						pattern->data[ag_pattern_pos + i] * amplitude + offset;
+					if (DEFAULT_ANALOG_NOISE > .0)
+						value += rnd_min +
+							((float)rand()/(float)RAND_MAX * (rnd_max-rnd_min));
+					data[i] = value;
+				}
 			}
 		} else {
 			/* Amplitude and offset unchanged, use the fast way. */
