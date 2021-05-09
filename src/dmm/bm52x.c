@@ -76,6 +76,7 @@
  */
 
 #include <config.h>
+#include <glib/gprintf.h>
 #include <libsigrok/libsigrok.h>
 #include "libsigrok-internal.h"
 #include <math.h>
@@ -1375,9 +1376,9 @@ SR_PRIV int brymen_bm52x_config_get(void *st, uint32_t key, GVariant **data,
 		if (!state)
 			return SR_ERR_ARG;
 		if (state->sess_idx == 0)
-			snprintf(text, sizeof(text), "Live");
+			g_snprintf(text, sizeof(text), "Live");
 		else
-			snprintf(text, sizeof(text), "Rec-%zu", state->sess_idx);
+			g_snprintf(text, sizeof(text), "Rec-%zu", state->sess_idx);
 		*data = g_variant_new_string(text);
 		return SR_OK;
 	default:
@@ -1462,9 +1463,9 @@ SR_PRIV int brymen_bm52x_config_list(void *st, uint32_t key, GVariant **data,
 		g_variant_builder_init(&gvb, G_VARIANT_TYPE_ARRAY);
 		for (idx = 0; idx <= count; idx++) {
 			if (idx == 0)
-				snprintf(name, sizeof(name), "Live");
+				g_snprintf(name, sizeof(name), "Live");
 			else
-				snprintf(name, sizeof(name), "Rec-%zu", idx);
+				g_snprintf(name, sizeof(name), "Rec-%zu", idx);
 			g_variant_builder_add(&gvb, "s", name);
 		}
 		*data = g_variant_builder_end(&gvb);

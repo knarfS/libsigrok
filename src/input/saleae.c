@@ -61,6 +61,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <glib/gprintf.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -223,7 +224,7 @@ static int create_channels(struct sr_input *in)
 
 	/* TODO Need to create a channel group? */
 	for (idx = 0; idx < count; idx++) {
-		snprintf(name, sizeof(name), "%zu", idx);
+		g_snprintf(name, sizeof(name), "%zu", idx);
 		ch = sr_channel_new(in->sdi, idx, type, TRUE, name);
 		if (!ch)
 			return SR_ERR_MALLOC;
