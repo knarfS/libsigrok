@@ -788,7 +788,12 @@ enum sr_configkey {
 
 	/*--- Device (or channel group) configuration -----------------------*/
 
-	/** The device supports setting its samplerate, in Hz. */
+	/**
+	 * The device supports setting its samplerate, in Hz.
+	 * This is used for devices that only support \>1Hz sample rates.
+	 *
+	 * @sa SR_CONF_SAMPLE_INTERVAL
+	 */
 	SR_CONF_SAMPLERATE = 30000,
 
 	/** The device supports setting a pre/post-trigger capture ratio. */
@@ -836,7 +841,12 @@ enum sr_configkey {
 	/** Trigger matches. */
 	SR_CONF_TRIGGER_MATCH,
 
-	/** The device supports setting its sample interval, in ms. */
+	/**
+	 * The device supports setting its sample interval, in ms.
+	 * This is used for devices that only support \<1Hz sample rates.
+	 *
+	 * @sa SR_CONF_SAMPLERATE
+	 */
 	SR_CONF_SAMPLE_INTERVAL,
 
 	/** Number of horizontal divisions, as related to SR_CONF_TIMEBASE. */
