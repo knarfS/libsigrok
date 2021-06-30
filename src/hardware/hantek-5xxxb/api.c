@@ -464,7 +464,6 @@ static int config_set(uint32_t key, GVariant *data,
 
 	if (!sdi)
 		return SR_ERR_ARG;
-
 	devc = sdi->priv;
 
 	/* Handle config keys that don't need the SysDATA */
@@ -609,10 +608,9 @@ static int config_list(uint32_t key, GVariant **data,
 	uint8_t probe_idx;
 	gboolean locked;
 
-	// TODO: sdi is not available for "sigrok-cli --continuous"
-	// TODO: SR_CONF_HORIZ_TRIGGERPOS with some devc will SegFault
-	//if (!sdi)
-	//	return SR_ERR_ARG;
+	/* Only handle standard keys when no device instance is given. */
+	if (!sdi)
+		return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
 
 	devc = sdi->priv;
 
