@@ -192,7 +192,9 @@ static int config_get(uint32_t key, GVariant **data,
 
 	(void)cg;
 
-	devc = sdi ? sdi->priv : NULL;
+	if (!sdi)
+		return SR_ERR_ARG;
+	devc = sdi->priv;
 
 	switch (key) {
 	case SR_CONF_LIMIT_SAMPLES:
@@ -247,7 +249,9 @@ static int config_set(uint32_t key, GVariant *data,
 
 	(void)cg;
 
-	devc = sdi ? sdi->priv : NULL;
+	if (!sdi)
+		return SR_ERR_ARG;
+	devc = sdi->priv;
 
 	switch (key) {
 	case SR_CONF_LIMIT_SAMPLES:
@@ -294,7 +298,11 @@ static int config_list(uint32_t key, GVariant **data,
 	GVariant *gvar, *arr[2];
 	GVariantBuilder gvb;
 
-	devc = sdi ? sdi->priv : NULL;
+	/* Only handle standard keys when no device instance is given. */
+	if (!sdi)
+		return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
+
+	devc = sdi->priv;
 
 	switch (key) {
 	case SR_CONF_SCAN_OPTIONS:
