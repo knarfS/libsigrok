@@ -298,16 +298,17 @@ static int config_list(uint32_t key, GVariant **data,
 	GVariant *gvar, *arr[2];
 	GVariantBuilder gvb;
 
-	/* Only handle standard keys when no device instance is given. */
-	if (!sdi)
-		return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
-
-	devc = sdi->priv;
-
 	switch (key) {
 	case SR_CONF_SCAN_OPTIONS:
 	case SR_CONF_DEVICE_OPTIONS:
 		return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
+	}
+
+	if (!sdi)
+		return SR_ERR_ARG;
+	devc = sdi->priv;
+
+	switch (key) {
 	case SR_CONF_MEASURED_QUANTITY:
 		/*
 		 * TODO: move to std.c as
