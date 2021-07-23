@@ -608,11 +608,7 @@ static int config_list(uint32_t key, GVariant **data,
 	uint8_t probe_idx;
 	gboolean locked;
 
-	/* Only handle standard keys when no device instance is given. */
-	if (!sdi)
-		return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
-
-	devc = sdi->priv;
+	devc = sdi ? sdi->priv : NULL;
 
 	if (!cg) {
 		switch (key) {
