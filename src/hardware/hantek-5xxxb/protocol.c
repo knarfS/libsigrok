@@ -362,7 +362,7 @@ SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 		hantek_5xxxb_get_sample_rate_array_index_from_sys_data(
 			sys_data->acqurie_store_depth);
 
-	/* This would return the correct sample rate of the scope, but it wouldn't
+	/* This would return the correct sample rate of the scope, but it doesn't
 	 * match the time stride of the actual samples
 	samplerate = sample_rate
 		[sys_data->horiz_win_tb]
