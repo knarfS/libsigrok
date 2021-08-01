@@ -857,7 +857,6 @@ SR_PRIV int hantek_5xxxb_receive_data(int fd, int revents, void *cb_data)
 			sr_session_send_meta(sdi, SR_CONF_NUM_HDIV,
 				g_variant_new_int32(sys_data->control_disp_menu
 					? HANTEK_5XXXB_NUM_HDIV_MENU_ON : HANTEK_5XXXB_NUM_HDIV_MENU_OFF_INT));
-			// TODO: samplerate??
 			sr_session_send_meta(sdi, SR_CONF_SAMPLERATE,
 				g_variant_new_uint64(hantek_5xxxb_get_samplerate(sys_data)));
 		} else if (sys_data->acqurie_store_depth != devc->in_sys_data->acqurie_store_depth) {
@@ -873,7 +872,8 @@ SR_PRIV int hantek_5xxxb_receive_data(int fd, int revents, void *cb_data)
 			}
 			sr_session_send_meta(sdi, SR_CONF_BUFFERSIZE,
 				g_variant_new_uint64(buffersize));
-			// TODO: samplerate??
+			sr_session_send_meta(sdi, SR_CONF_SAMPLERATE,
+				g_variant_new_uint64(hantek_5xxxb_get_samplerate(sys_data)));
 		} else if (sys_data->acqurie_mode != devc->in_sys_data->acqurie_mode) {
 			sr_session_send_meta(sdi, SR_CONF_AVERAGING,
 				g_variant_new_boolean(sys_data->acqurie_mode == ACQ_MODE_AVG));
