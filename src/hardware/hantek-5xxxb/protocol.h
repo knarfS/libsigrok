@@ -33,6 +33,7 @@
 
 #define LOG_PREFIX "hantek-5xxxb"
 
+#define HANTEK_5XXXB_USB_TIMEOUT_MS         500
 #define HANTEK_5XXXB_USB_VENDOR             0x049f
 #define HANTEK_5XXXB_USB_PRODUCT            0x505a
 #define HANTEK_5XXXB_USB_INTERFACE          0
@@ -55,13 +56,13 @@
 
 /** 510 pixels */
 #define HANTEK_5XXXB_NUM_VDIV               10.2
-/** TODO */
+/** TODO: Remove when SR_CONF_NUM_VDIV has datatype double! */
 #define HANTEK_5XXXB_NUM_VDIV_INT           11
 /** 640 pixels */
 #define HANTEK_5XXXB_NUM_HDIV_MENU_ON       16
 /** 768 pixels */
 #define HANTEK_5XXXB_NUM_HDIV_MENU_OFF      19.2
-/** TODO */
+/** TODO: Remove when SR_CONF_NUM_HDIV has datatype double! */
 #define HANTEK_5XXXB_NUM_HDIV_MENU_OFF_INT  20
 
 enum states {
@@ -88,6 +89,34 @@ enum vertical_base {
 	VB_1V    = 0x08,
 	VB_2V    = 0x09,
 	VB_5V    = 0x0A,
+};
+
+/**
+ * All known Tekway/Hantek/Voltcraft/Protek models with this protocol. The
+ * model ids are available in the sys_data.control_type field (0x00 - 0x0C).
+ *
+ * There are some Hantek handheld models that potentially use the same protocol
+ * with some additional data (DMM), but the specific device id is unknown at
+ * the moment:
+ * Hantek DSO1202B/BV, DSO1102B/BV, DSO1062B/BV
+ */
+static const struct {
+	const char *vendor;
+	const char *model;
+} hantek_5xxxb_model[] = {
+	{ "Hantek", "DSO5202B/BM/BMV" }, /* 0x00 */ /* Also Tekway DST1202B, Protek 3210 */
+	{ "Tekway", "DST1100" },         /* 0x01 */
+	{ "Tekway", "DST4060" },         /* 0x02 */
+	{ "Tekway", "DST1150" },         /* 0x03 */
+	{ "Tekway", "DST4042" },         /* 0x04 */
+	{ "Hantek", "DSO5102B/BM/BMV" }, /* 0x05 */ /* Also Tekway DST1102B, Protek 3110 */
+	{ "Hantek", "DSO5062C" },        /* 0x06 */ /* Also Tekway DST4062B */
+	{ "Tekway", "DST1152" },         /* 0x07 */
+	{ "Tekway", "DST3022B" },        /* 0x08 */
+	{ "Tekway", "DST3042B" },        /* 0x09 */
+	{ "Tekway", "DST4062" },         /* 0x0A */
+	{ "Hantek", "DSO5102C" },        /* 0x0B */ /* Also Tekway DST4102B */
+	{ "Hantek", "DSO5062B/BM/BMV" }, /* 0x0C */ /* Also Tekway DST1062B, Voltcraft DSO-1062D/DSO-3062C */
 };
 
 /* [probe factor][][] */
@@ -527,9 +556,10 @@ struct __attribute__((packed)) hantek_5xxxb_sys_data {
 	uint8_t math_fft_vrms;
 
 	/*
-	 * These are not used in the Voltcraft 1062D/3062C scopes, but in the
-	 * handheld scopes Hantek DSO1202B/BV, DSO1102B/BV and DSO1062B/BV, but I
-	 * can't verify this...
+	 * These are not used in the default scopes that defined in the
+	 * hantek_5xxxb_model array, but should be in the handheld scopes
+	 * Hantek DSO1202B/BV, DSO1102B/BV and DSO1062B/BV, but I can't verify this
+	 * and don't know the device ids (hantek_5xxxb_model).
 	 */
 	/*
 	uint8_t dmmctl_type;
@@ -552,6 +582,10 @@ struct dev_context {
 	struct hantek_5xxxb_sys_data *in_sys_data;
 	struct hantek_5xxxb_sys_data *out_sys_data;
 };
+
+
+SR_PRIV int hantek_5xxxb_dev_open(struct sr_dev_inst *sdi);
+SR_PRIV int hantek_5xxxb_dev_close(struct sr_dev_inst *sdi);
 
 SR_PRIV uint64_t hantek_5xxxb_get_samplerate(
 	const struct hantek_5xxxb_sys_data *sys_data);

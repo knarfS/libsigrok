@@ -240,7 +240,7 @@ static int send_bulk(const struct sr_dev_inst *sdi,
 	// TODO: Calc checksum here?
 
 	ret = libusb_bulk_transfer(usb->devhdl, HANTEK_5XXXB_USB_EP_OUT,
-		out_buf, out_size, &tmp, 500);
+		out_buf, out_size, &tmp, HANTEK_5XXXB_USB_TIMEOUT_MS);
 	if (ret != 0) {
 		sr_err("libusb_bulk_transfer(): Send cmd 0x%X failed with %s",
 			out_buf[3], libusb_error_name(ret));
@@ -261,7 +261,7 @@ static int receive_bulk(const struct sr_dev_inst *sdi,
 	usb = sdi->conn;
 
 	ret = libusb_bulk_transfer(usb->devhdl, HANTEK_5XXXB_USB_EP_IN,
-		in_buf, max_size, in_size, 5000); // TODO: setable timeout
+		in_buf, max_size, in_size, HANTEK_5XXXB_USB_TIMEOUT_MS);
 	if (ret != 0) {
 		sr_err("libusb_bulk_transfer(): Receive cmd 0x%X failed with %s",
 			expected_cmd, libusb_error_name(ret));
@@ -348,6 +348,101 @@ static void send_df_chunk(const struct sr_dev_inst *sdi,
 	g_slist_free(analog.meaning->channels);
 
 	g_free(analog.data);
+}
+
+SR_PRIV int hantek_5xxxb_dev_open(struct sr_dev_inst *sdi)
+{
+	struct drv_context *drvc;
+	struct sr_usb_dev_inst *usb;
+	struct libusb_device_descriptor des;
+	libusb_device **devlist;
+	char connection_id[64];
+	int ret;
+	int i;
+
+	drvc = sdi->driver->context;
+	usb = sdi->conn;
+
+	libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
+	for (i = 0; devlist[i]; i++) {
+		libusb_get_device_descriptor(devlist[i], &des);
+
+		if (des.idVendor != HANTEK_5XXXB_USB_VENDOR ||
+				des.idProduct != HANTEK_5XXXB_USB_PRODUCT)
+			continue;
+
+		if ((sdi->status == SR_ST_INITIALIZING) ||
+				(sdi->status == SR_ST_INACTIVE)) {
+			/* Check device by its physical USB bus/port address. */
+			if (usb_get_port_path(devlist[i], connection_id, sizeof(connection_id)) < 0)
+				continue;
+
+			if (strcmp(sdi->connection_id, connection_id))
+				/* This is not the one. */
+				continue;
+		}
+
+		if (!(ret = libusb_open(devlist[i], &usb->devhdl))) {
+			sdi->status = SR_ST_ACTIVE;
+			sr_info("Opened device on %d.%d (logical) / "
+				"%s (physical) interface %d.",
+				usb->bus, usb->address,
+				sdi->connection_id, HANTEK_5XXXB_USB_INTERFACE);
+		} else
+			sr_err("Failed to open device: %s.", libusb_error_name(ret));
+
+		/* If we made it here, we handled the device (somehow). */
+		break;
+	}
+	libusb_free_device_list(devlist, 1);
+
+	if (sdi->status != SR_ST_ACTIVE) {
+		sr_err("Unable to open device.");
+		return SR_ERR;
+	}
+
+	if (libusb_kernel_driver_active(usb->devhdl, HANTEK_5XXXB_USB_INTERFACE) == 1) {
+		ret = libusb_detach_kernel_driver(usb->devhdl, HANTEK_5XXXB_USB_INTERFACE);
+		if (ret < 0) {
+			sr_err("Failed to detach kernel driver: %s.",
+				libusb_error_name(ret));
+			libusb_close(usb->devhdl);
+			return SR_ERR;
+		}
+	}
+
+	ret = libusb_claim_interface(usb->devhdl, HANTEK_5XXXB_USB_INTERFACE);
+	if (ret != 0) {
+		sr_err("Unable to claim interface: %s.", libusb_error_name(ret));
+		return SR_ERR;
+	}
+
+	libusb_reset_device(usb->devhdl);
+
+	return SR_OK;
+}
+
+SR_PRIV int hantek_5xxxb_dev_close(struct sr_dev_inst *sdi)
+{
+	struct dev_context *devc;
+	struct sr_usb_dev_inst *usb;
+
+	devc = (sdi) ? sdi->priv : NULL;
+	if (devc)
+		g_mutex_clear(&devc->rw_mutex);
+
+	usb = sdi->conn;
+	if (!usb->devhdl)
+		return SR_OK;
+
+	sr_info("Closing device on %d.%d (logical) / %s (physical) interface %d.",
+		usb->bus, usb->address, sdi->connection_id, HANTEK_5XXXB_USB_INTERFACE);
+	libusb_release_interface(usb->devhdl, HANTEK_5XXXB_USB_INTERFACE);
+	libusb_close(usb->devhdl);
+	usb->devhdl = NULL;
+	sdi->status = SR_ST_INACTIVE;
+
+	return SR_OK;
 }
 
 SR_PRIV uint64_t hantek_5xxxb_get_samplerate(

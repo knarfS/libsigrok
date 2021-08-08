@@ -88,6 +88,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	unsigned int i, j;
 	const char *conn;
 	char connection_id[64];
+	uint8_t device_id;
 
 	drvc = di->context;
 
@@ -141,39 +142,12 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 		sdi->status = SR_ST_INACTIVE;
 		/* TODO
 		sdi->status = SR_ST_INITIALIZING;
-		sdi->inst_type = SR_INST_USB;
 		*/
-
-		/*
-		 * All known Devices with this protocol:
-		 *   Hantek DSO5202B/BM/BMV, DSO5102B/BM/BMV, DSO5062B/BM/BMV
-		 *   Hantek (Handhelds) DSO1202B/BV, DSO1102B/BV, DSO1062B/BV
-		 *   Tekway DST1202B, DST1102B, DST1062B
-		 *   Protek 3210, 3110
-		 *   Voltcraft DSO-1062D, DSO-3062C
-		 *
-		 * TODO:
-		 * in_sys_data->control_type is containing the actual model:
-		 *   0x00 : Tekway DST1202B, Hantek DSO5202B/BM/BMV, Protek 3210
-		 *   0x01 : Tekway DST1100
-		 *   0x02 : Tekway DST4060
-		 *   0x03 : Tekway DST1150
-		 *   0x04 : Tekway DST4042
-		 *   0x05 : Tekway DST1102B, Hantek DSO5102B/BM/BMV, Protek 3110
-		 *   0x06 : Tekway DST4062B, Hantek DSO5062C (?)
-		 *   0x07 : Tekway DST1152
-		 *   0x08 : Tekway DST3022B
-		 *   0x09 : Tekway DST3042B
-		 *   0x0A : Tekway DST4062
-		 *   0x0B : Tekway DST4102B, Hantek DSO5102C (?)
-		 *   0x0C : Tekway DST1062B, Hantek DSO5062B/BM/BMV, Voltcraft DSO-1062D/DSO-3062C
-		 */
-		sdi->vendor = g_strdup("Voltcraft"); // TODO
-		sdi->model = g_strdup("DSO-1062D"); // TODO
 		sdi->connection_id = g_strdup(connection_id);
 		sdi->conn = sr_usb_dev_inst_new(
 			libusb_get_bus_number(devlist[i]),
 			libusb_get_device_address(devlist[i]), NULL);
+		sdi->inst_type = SR_INST_USB;
 
 		/*
 		 * Add only the real channels. EXT isn't a source of data, only
@@ -201,102 +175,43 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
 	libusb_free_device_list(devlist, 1);
 
-	return std_scan_complete(di, devices);
+	devices = std_scan_complete(di, devices);
+
+	/* Get vendor and model */
+	for (l = devices; l; l = l->next) {
+		sdi = l->data;
+		devc = sdi->priv;
+
+		hantek_5xxxb_dev_open(sdi); // TODO
+
+		g_mutex_lock(&devc->rw_mutex); // TODO
+		hantek_5xxxb_get_sys_data(sdi, devc->in_sys_data);
+		device_id = devc->in_sys_data->control_type;
+		if (device_id < ARRAY_SIZE(hantek_5xxxb_model)) {
+			sdi->vendor = g_strdup(hantek_5xxxb_model[device_id].vendor);
+			sdi->model = g_strdup(hantek_5xxxb_model[device_id].model);
+		} else {
+			// Unknown model
+			sdi->vendor = g_strdup("Hantek");
+			sdi->model = g_strdup("Unknown DSO5xxxB");
+		}
+		g_mutex_unlock(&devc->rw_mutex); // TODO
+
+		hantek_5xxxb_dev_close(sdi); // TODO
+	}
+
+	//return std_scan_complete(di, devices);
+	return devices;
 }
 
 static int dev_open(struct sr_dev_inst *sdi)
 {
-	struct drv_context *drvc;
-	struct sr_usb_dev_inst *usb;
-	struct libusb_device_descriptor des;
-	libusb_device **devlist;
-	char connection_id[64];
-	int ret;
-	int i;
-
-	drvc = sdi->driver->context;
-	usb = sdi->conn;
-
-	libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
-	for (i = 0; devlist[i]; i++) {
-		libusb_get_device_descriptor(devlist[i], &des);
-
-		if (des.idVendor != HANTEK_5XXXB_USB_VENDOR ||
-				des.idProduct != HANTEK_5XXXB_USB_PRODUCT)
-			continue;
-
-		if ((sdi->status == SR_ST_INITIALIZING) ||
-				(sdi->status == SR_ST_INACTIVE)) {
-			/* Check device by its physical USB bus/port address. */
-			if (usb_get_port_path(devlist[i], connection_id, sizeof(connection_id)) < 0)
-				continue;
-
-			if (strcmp(sdi->connection_id, connection_id))
-				/* This is not the one. */
-				continue;
-		}
-
-		if (!(ret = libusb_open(devlist[i], &usb->devhdl))) {
-			sdi->status = SR_ST_ACTIVE;
-			sr_info("Opened device on %d.%d (logical) / "
-				"%s (physical) interface %d.",
-				usb->bus, usb->address,
-				sdi->connection_id, HANTEK_5XXXB_USB_INTERFACE);
-		} else
-			sr_err("Failed to open device: %s.", libusb_error_name(ret));
-
-		/* If we made it here, we handled the device (somehow). */
-		break;
-	}
-	libusb_free_device_list(devlist, 1);
-
-	if (sdi->status != SR_ST_ACTIVE) {
-		sr_err("Unable to open device.");
-		return SR_ERR;
-	}
-
-	if (libusb_kernel_driver_active(usb->devhdl, HANTEK_5XXXB_USB_INTERFACE) == 1) {
-		ret = libusb_detach_kernel_driver(usb->devhdl, HANTEK_5XXXB_USB_INTERFACE);
-		if (ret < 0) {
-			sr_err("Failed to detach kernel driver: %s.",
-				libusb_error_name(ret));
-			libusb_close(usb->devhdl);
-			return SR_ERR;
-		}
-	}
-
-	ret = libusb_claim_interface(usb->devhdl, HANTEK_5XXXB_USB_INTERFACE);
-	if (ret != 0) {
-		sr_err("Unable to claim interface: %s.", libusb_error_name(ret));
-		return SR_ERR;
-	}
-
-	libusb_reset_device(usb->devhdl);
-
-	return SR_OK;
+	return hantek_5xxxb_dev_open(sdi);
 }
 
 static int dev_close(struct sr_dev_inst *sdi)
 {
-	struct dev_context *devc;
-	struct sr_usb_dev_inst *usb;
-
-	devc = (sdi) ? sdi->priv : NULL;
-	if (devc)
-		g_mutex_clear(&devc->rw_mutex);
-
-	usb = sdi->conn;
-	if (!usb->devhdl)
-		return SR_OK;
-
-	sr_info("Closing device on %d.%d (logical) / %s (physical) interface %d.",
-		usb->bus, usb->address, sdi->connection_id, HANTEK_5XXXB_USB_INTERFACE);
-	libusb_release_interface(usb->devhdl, HANTEK_5XXXB_USB_INTERFACE);
-	libusb_close(usb->devhdl);
-	usb->devhdl = NULL;
-	sdi->status = SR_ST_INACTIVE;
-
-	return SR_OK;
+	return hantek_5xxxb_dev_close(sdi);
 }
 
 static int config_get(uint32_t key, GVariant **data,
