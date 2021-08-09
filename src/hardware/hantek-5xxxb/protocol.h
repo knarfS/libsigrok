@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
- * This driver is based on the protocol description made by tinman,
- * from the mikrocontroller.net and eevblog.com forums:
+ * This driver is based on the protocol description made by tinman from the
+ * mikrocontroller.net and eevblog.com forum:
  * https://www.mikrocontroller.net/articles/Hantek_Protokoll
  * https://elinux.org/Das_Oszi_Protocol
  */
@@ -33,7 +33,7 @@
 
 #define LOG_PREFIX "hantek-5xxxb"
 
-#define HANTEK_5XXXB_USB_TIMEOUT_MS         500
+#define HANTEK_5XXXB_USB_TIMEOUT_MS         5000
 #define HANTEK_5XXXB_USB_VENDOR             0x049f
 #define HANTEK_5XXXB_USB_PRODUCT            0x505a
 #define HANTEK_5XXXB_USB_INTERFACE          0
@@ -46,11 +46,11 @@
 #define HANTEK_5XXXB_CMD_ECHO               0x00
 #define HANTEK_5XXXB_CMD_RD_SYSDATA         0x01
 #define HANTEK_5XXXB_CMD_RD_SAMPLEDATA      0x02
-#define HANTEK_5XXXB_CMD_SUB_RD_SAMPLEDATA  0x01 // TODO
+#define HANTEK_5XXXB_CMD_SUB_RD_SAMPLEDATA  0x01
 #define HANTEK_5XXXB_CMD_RD_FILE            0x10
 #define HANTEK_5XXXB_CMD_WR_SYSDATA         0x11
 #define HANTEK_5XXXB_CMD_AQUISITION         0x12
-#define HANTEK_5XXXB_CMD_SUB_AQUISITION     0x00 // TODO
+#define HANTEK_5XXXB_CMD_SUB_AQUISITION     0x00
 #define HANTEK_5XXXB_CMD_LOCK               0x12
 #define HANTEK_5XXXB_CMD_SUB_LOCK           0x01
 
@@ -271,8 +271,8 @@ static const uint64_t win_timebase[][2] = {
 };
 
 /**
- * Maps the memory depth to sys_data store_depth value and to the index of
- * the sample_rate array.
+ * Maps the memory depth (in kS) to the sys_data.acqurie_store_depth value and
+ * to the index of the sample_rate array.
  */
 static const struct {
 	uint64_t memory_depth;
@@ -309,13 +309,21 @@ static const char *trigger_slope[] = {
 	"r+f", /* 0x02 */
 };
 
-static const uint64_t average_count[] = {
+/** Averaging sample count for 4k buffer size */
+static const uint64_t average_count_4k[] = {
 	4,   /* 0x00 */
 	8,   /* 0x01 */
 	16,  /* 0x02 */
 	32,  /* 0x03 */
 	64,  /* 0x04 */
 	128, /* 0x05 */
+};
+
+/** Averaging sample count for 40k buffer size */
+static const uint64_t average_count_40k[] = {
+	4,   /* 0x00 */
+	8,   /* 0x01 */
+	16,  /* 0x02 */
 };
 
 /* [timebase][ch2][disp menu][memory depth] */
@@ -556,10 +564,10 @@ struct __attribute__((packed)) hantek_5xxxb_sys_data {
 	uint8_t math_fft_vrms;
 
 	/*
-	 * These are not used in the default scopes that defined in the
-	 * hantek_5xxxb_model array, but should be in the handheld scopes
-	 * Hantek DSO1202B/BV, DSO1102B/BV and DSO1062B/BV, but I can't verify this
-	 * and don't know the device ids (hantek_5xxxb_model).
+	 * These properties are not used in the default scopes that  are defined in
+	 * the hantek_5xxxb_model array, but should be in the handheld scopes
+	 * Hantek DSO1202B/BV, DSO1102B/BV and DSO1062B/BV. But that can't be
+	 * verified and also device ids are unknown (hantek_5xxxb_model).
 	 */
 	/*
 	uint8_t dmmctl_type;

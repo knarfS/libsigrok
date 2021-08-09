@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
- * This driver is based on the protocol description made by tinman,
- * from the mikrocontroller.net and eevblog.com forums:
+ * This driver is based on the protocol description made by tinman from the
+ * mikrocontroller.net and eevblog.com forum:
  * https://www.mikrocontroller.net/articles/Hantek_Protokoll
  * https://elinux.org/Das_Oszi_Protocol
  */
@@ -500,7 +500,8 @@ SR_PRIV void hantek_5xxxb_set_timebase(const struct sr_dev_inst *sdi,
 		[devc->in_sys_data->vert_ch[0].disp & devc->in_sys_data->vert_ch[1].disp]
 		[sample_rate_array_idx];
 	if (samplerate == 0) {
-		/* Current memory depth is not valide, set to fixed 512k TODO */
+		/* Current memory depth is not valide, set to fixed 512k
+		 * TODO: move to check_buffer_sizew() and buffer_size name angleichen! */
 		devc->out_sys_data->acqurie_store_depth =
 			hantek_5xxxb_get_store_depth_from_sample_rate_array_index(
 				sample_rate_array_idx - 1);
@@ -516,7 +517,7 @@ SR_PRIV uint64_t hantek_5xxxb_get_memory_depth_from_sys_data(
 		if (memory_depth_mapper[i].sys_data_store_depth_map == store_depth)
 			return memory_depth_mapper[i].memory_depth;
 	}
-	return 0;
+	return 0; // TODO
 }
 
 SR_PRIV uint8_t hantek_5xxxb_get_store_depth_from_memory_depth(
@@ -973,8 +974,9 @@ SR_PRIV int hantek_5xxxb_receive_data(int fd, int revents, void *cb_data)
 			sr_session_send_meta(sdi, SR_CONF_AVERAGING,
 				g_variant_new_boolean(sys_data->acqurie_mode == ACQ_MODE_AVG));
 		} else if (sys_data->acqurie_avg_cnt != devc->in_sys_data->acqurie_avg_cnt) {
+			/* Get sample count from the full set (4k array) */
 			sr_session_send_meta(sdi, SR_CONF_AVG_SAMPLES,
-				g_variant_new_uint64(average_count[sys_data->acqurie_avg_cnt]));
+				g_variant_new_uint64(average_count_4k[sys_data->acqurie_avg_cnt]));
 		}
 
 		/* Set changed SysDATA to device instance */

@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
- * This driver is based on the protocol description made by tinman,
- * from the mikrocontroller.net and eevblog.com forums:
+ * This driver is based on the protocol description made by tinman from the
+ * mikrocontroller.net and eevblog.com forum:
  * https://www.mikrocontroller.net/articles/Hantek_Protokoll
  * https://elinux.org/Das_Oszi_Protocol
  */
@@ -140,9 +140,6 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 
 		sdi = g_malloc0(sizeof(struct sr_dev_inst));
 		sdi->status = SR_ST_INACTIVE;
-		/* TODO
-		sdi->status = SR_ST_INITIALIZING;
-		*/
 		sdi->connection_id = g_strdup(connection_id);
 		sdi->conn = sr_usb_dev_inst_new(
 			libusb_get_bus_number(devlist[i]),
@@ -182,7 +179,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 		sdi = l->data;
 		devc = sdi->priv;
 
-		hantek_5xxxb_dev_open(sdi); // TODO
+		hantek_5xxxb_dev_open(sdi); // TODO: return
 
 		g_mutex_lock(&devc->rw_mutex); // TODO
 		hantek_5xxxb_get_sys_data(sdi, devc->in_sys_data);
@@ -197,7 +194,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 		}
 		g_mutex_unlock(&devc->rw_mutex); // TODO
 
-		hantek_5xxxb_dev_close(sdi); // TODO
+		hantek_5xxxb_dev_close(sdi); // TODO: return
 	}
 
 	//return std_scan_complete(di, devices);
@@ -235,6 +232,7 @@ static int config_get(uint32_t key, GVariant **data,
 	usb = sdi->conn;
 
 	/* Handle config keys that don't need the SysDATA */
+	// TODO: if (!cg) {
 	switch (key) {
 	case SR_CONF_LIMIT_SAMPLES:
 	case SR_CONF_LIMIT_FRAMES:
@@ -314,8 +312,9 @@ static int config_get(uint32_t key, GVariant **data,
 				devc->in_sys_data->acqurie_mode == ACQ_MODE_AVG);
 			break;
 		case SR_CONF_AVG_SAMPLES:
+			/* Get sample count from the full set (4k array) */
 			*data = g_variant_new_uint64(
-				average_count[devc->in_sys_data->acqurie_avg_cnt]);
+				average_count_4k[devc->in_sys_data->acqurie_avg_cnt]);
 			break;
 		default:
 			ret = SR_ERR_NA;
@@ -376,12 +375,14 @@ static int config_set(uint32_t key, GVariant *data,
 	int ch_idx, idx;
 	uint8_t probe_idx;
 	float vdiv;
+	uint64_t buffer_size;
 
 	if (!sdi)
 		return SR_ERR_ARG;
 	devc = sdi->priv;
 
 	/* Handle config keys that don't need the SysDATA */
+	// TODO: if (!cg) {
 	switch (key) {
 	case SR_CONF_LIMIT_SAMPLES:
 	case SR_CONF_LIMIT_FRAMES:
@@ -440,18 +441,39 @@ static int config_set(uint32_t key, GVariant *data,
 				g_variant_get_double(data) * 1e12;
 			break;
 		case SR_CONF_BUFFERSIZE:
+			// TODO: Check SR_CONF_AVG_SAMPLES and change (to 16)
 			devc->out_sys_data->acqurie_store_depth =
 				hantek_5xxxb_get_store_depth_from_memory_depth(
 					g_variant_get_uint64(data));
 			break;
 		case SR_CONF_AVERAGING:
-			/* TODO: Check for SR_CONF_BUFFERSIZE */
+			/*
+			 * NOTE: Averaging is only available for 4k and 40k buffer size. If
+			 * above, the scope will crash. Switch to 40k in that case.
+			 * This may be different for other models.
+			 */
+			buffer_size = hantek_5xxxb_get_memory_depth_from_sys_data(
+				devc->in_sys_data->acqurie_store_depth);
+			if (buffer_size > (40 * 1000) && g_variant_get_boolean(data)) {
+				devc->out_sys_data->acqurie_store_depth =
+					hantek_5xxxb_get_store_depth_from_memory_depth(40 * 1000);
+			}
 			devc->out_sys_data->acqurie_mode =
 				g_variant_get_boolean(data) ? ACQ_MODE_AVG : ACQ_MODE_NORMAL;
 			break;
 		case SR_CONF_AVG_SAMPLES:
-			/* TODO: Check for SR_CONF_BUFFERSIZE */
-			if ((idx = std_u64_idx(data, ARRAY_AND_SIZE(average_count))) < 0) {
+			/*
+			 * NOTE: When 40k buffer size is enabled, only 4, 8 and 16 average
+			 * smaple count is available.
+			 * If a sample count above will be selected, the scope crashes. Set
+			 * to 16 samples in that case.
+			 */
+			buffer_size = hantek_5xxxb_get_memory_depth_from_sys_data(
+				devc->in_sys_data->acqurie_store_depth);
+			if (buffer_size > (4 * 1000) && g_variant_get_uint64(data) > 16) {
+				data = g_variant_new_uint64(16);
+			}
+			if ((idx = std_u64_idx(data, ARRAY_AND_SIZE(average_count_4k))) < 0) {
 				ret = SR_ERR_ARG;
 				goto done;
 			}
@@ -519,11 +541,36 @@ static int config_list(uint32_t key, GVariant **data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
 	struct dev_context *devc;
+	uint64_t buffer_size;
 	int ch_idx;
 	uint8_t probe_idx;
-	gboolean locked;
 
 	devc = sdi ? sdi->priv : NULL;
+
+	/* Handle config keys that don't need the SysDATA */
+	if (!cg) {
+		switch (key) {
+		case SR_CONF_SCAN_OPTIONS:
+		case SR_CONF_DEVICE_OPTIONS:
+			return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
+		}
+	} else {
+		switch (key) {
+		case SR_CONF_DEVICE_OPTIONS:
+			*data = std_gvar_array_u32(ARRAY_AND_SIZE(devopts_cg));
+			return SR_OK;
+		}
+	}
+
+	/*
+	 * Don't get the SysDATA when acquisition is running. SysDATA will be
+	 * catched by acquision anyways.
+	 */
+	if (devc->dev_state != CAPTURE) {
+		g_mutex_lock(&devc->rw_mutex);
+		hantek_5xxxb_get_sys_data(sdi, devc->in_sys_data);
+		g_mutex_unlock(&devc->rw_mutex);
+	}
 
 	if (!cg) {
 		switch (key) {
@@ -548,8 +595,14 @@ static int config_list(uint32_t key, GVariant **data,
 			*data = std_gvar_array_u64(ARRAY_AND_SIZE(buffersizes));
 			break;
 		case SR_CONF_AVG_SAMPLES:
-			/* TODO: Depending on SR_CONF_BUFFERSIZE */
-			*data = std_gvar_array_u64(ARRAY_AND_SIZE(average_count));
+			buffer_size = hantek_5xxxb_get_memory_depth_from_sys_data(
+				devc->in_sys_data->acqurie_store_depth);
+			if (buffer_size == (4 * 1000))
+				*data = std_gvar_array_u64(ARRAY_AND_SIZE(average_count_4k));
+			else if (buffer_size == (40 * 1000))
+				*data = std_gvar_array_u64(ARRAY_AND_SIZE(average_count_40k));
+			else
+				*data = std_gvar_array_u64(NULL, 0);
 			break;
 		default:
 			return SR_ERR_NA;
@@ -570,23 +623,8 @@ static int config_list(uint32_t key, GVariant **data,
 			*data = g_variant_new_strv(ARRAY_AND_SIZE(ch_coupling));
 			break;
 		case SR_CONF_VDIV:
-			/*
-			 * TODO: See reLoad  Pro
-			 * Don't get the SysDATA when acquisition is running. SysDATA will be
-			 * catched by acquision anyways.
-			 */
-			/* TODO: I don't like... */
-			if (devc->dev_state != CAPTURE) {
-				g_mutex_lock(&devc->rw_mutex);
-				locked = TRUE;
-				hantek_5xxxb_get_sys_data(sdi, devc->in_sys_data);
-			} else
-				locked = FALSE;
-
 			probe_idx = devc->in_sys_data->vert_ch[ch_idx].probe;
 			*data = std_gvar_tuple_array(ARRAY_AND_SIZE(ch_vdiv[probe_idx]));
-			if (locked)
-				g_mutex_unlock(&devc->rw_mutex);
 			break;
 		case SR_CONF_PROBE_FACTOR:
 			*data = std_gvar_array_u64(ARRAY_AND_SIZE(probe_factor));
