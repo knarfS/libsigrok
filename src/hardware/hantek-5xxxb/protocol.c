@@ -622,6 +622,10 @@ SR_PRIV int16_t hantek_5xxxb_get_vert_pos_from_value(
 SR_PRIV int hantek_5xxxb_lock_panel(const struct sr_dev_inst *sdi,
 	gboolean lock)
 {
+	(void)sdi;
+	(void)lock;
+
+	/*
 	uint8_t out_buf[7], in_buf[128];
 	int in_size, ret;
 
@@ -651,6 +655,7 @@ SR_PRIV int hantek_5xxxb_lock_panel(const struct sr_dev_inst *sdi,
 		sr_err("Response is wrong (got 0x%X, expected 0x%X)", in_buf[5], lock);
 		return SR_ERR;
 	}
+	*/
 
 	return SR_OK;
 }
