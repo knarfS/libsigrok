@@ -261,6 +261,12 @@ src_libdrivers_la_SOURCES += \
 	src/hardware/beaglelogic/beaglelogic_native.c \
 	src/hardware/beaglelogic/beaglelogic_tcp.c
 endif
+if HW_BOSCH_GLM
+src_libdrivers_la_SOURCES += \
+	src/hardware/bosch-glm/protocol.h \
+	src/hardware/bosch-glm/protocol.c \
+	src/hardware/bosch-glm/api.c
+endif
 if HW_CEM_DT_885X
 src_libdrivers_la_SOURCES += \
 	src/hardware/cem-dt-885x/protocol.h \
