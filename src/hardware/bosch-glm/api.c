@@ -22,37 +22,125 @@
 
 static struct sr_dev_driver bosch_glm_driver_info;
 
+static const uint32_t scanopts[] = {
+	SR_CONF_CONN,
+};
+
+static const uint32_t drvopts[] = {
+	SR_CONF_MULTIMETER, // TODO
+};
+
+static const uint32_t devopts[] = {
+	SR_CONF_CONTINUOUS,
+	SR_CONF_LIMIT_SAMPLES | SR_CONF_SET | SR_CONF_LIST,
+	SR_CONF_LIMIT_MSEC | SR_CONF_SET | SR_CONF_LIST,
+};
+
+
 static GSList *scan(struct sr_dev_driver *di, GSList *options)
 {
-	struct drv_context *drvc;
-	GSList *devices;
+	struct sr_bt_desc *desc;
+	const char *conn;
+	struct sr_config *src;
+	GSList *l;
+	int ret;
+	struct dev_context *devc;
 
-	(void)options;
+	conn = NULL;
+	for (l = options; l; l = l->next) {
+		src = l->data;
+		switch (src->key) {
+		case SR_CONF_CONN:
+			conn = g_variant_get_string(src->data, NULL);
+			break;
+		}
+	}
 
-	devices = NULL;
-	drvc = di->context;
-	drvc->instances = NULL;
+	if (!conn)
+		return NULL;
 
-	/* TODO: scan for devices, either based on a SR_CONF_CONN option
-	 * or on a USB scan. */
+	//desc = sr_bt_desc_new();
+	//if (!desc)
+	//	return NULL;
+    //
+	//ret = sr_bt_config_addr_remote(desc, conn);
+	//if (ret < 0)
+	//	goto err;
+    //
+	///*
+	// * GLM 50C:  0x0005
+	// * GLM 100C: 0x0001
+	// */
+	//ret = sr_bt_config_rfcomm(desc, 0x0005);
+	//if (ret < 0)
+	//	goto err;
+    //
+	//ret = sr_bt_connect_rfcomm(desc);
+	//if (ret < 0)
+	//	goto err;
+	//sr_bt_disconnect(desc);
 
-	return devices;
+	struct sr_dev_inst *sdi = g_malloc0(sizeof(*sdi)); // TODO
+	devc = g_malloc0(sizeof(*devc));
+
+	sdi->priv = devc;
+	//sdi->inst_type = SR_INST_USER;
+	sdi->status = SR_ST_INITIALIZING;
+	sdi->connection_id = g_strdup(conn);
+	sdi->conn = desc;
+	sdi->vendor = g_strdup("Bosch");
+	sdi->model = g_strdup("GLM 50C"); // TODO
+
+	sr_sw_limits_init(&devc->limits);
+	devc->rfcomm_channel = 0x0005; // TODO
+
+	sr_channel_new(sdi, 0, SR_CHANNEL_ANALOG, TRUE, "CH");
+
+	return std_scan_complete(di, g_slist_prepend(NULL, sdi));
+
+err:
+	sr_bt_desc_free(desc);
+	return NULL;
 }
 
 static int dev_open(struct sr_dev_inst *sdi)
 {
-	(void)sdi;
+	struct dev_context *devc;
+	struct sr_bt_desc *desc;
+	int ret;
 
-	/* TODO: get handle from sdi->conn and open it. */
+	devc = sdi->priv;
+	desc = sdi->conn;
+
+	desc = sr_bt_desc_new();
+	if (!desc)
+		return SR_ERR;
+
+	ret = sr_bt_config_addr_remote(desc, "00:13:43:B5:37:89");
+	if (ret < 0)
+		return SR_ERR;
+
+	ret = sr_bt_config_rfcomm(desc, devc->rfcomm_channel);
+	if (ret < 0)
+		return SR_ERR;
+
+	ret = sr_bt_connect_rfcomm(desc);
+	if (ret < 0)
+		return SR_ERR;
+
+	sdi->status = SR_ST_ACTIVE;
+	sdi->conn = desc;
 
 	return SR_OK;
 }
 
 static int dev_close(struct sr_dev_inst *sdi)
 {
-	(void)sdi;
+	struct sr_bt_desc *desc;
 
-	/* TODO: get handle from sdi->conn and close it. */
+	desc = sdi->conn;
+
+	sr_bt_disconnect(desc);
 
 	return SR_OK;
 }
@@ -60,75 +148,59 @@ static int dev_close(struct sr_dev_inst *sdi)
 static int config_get(uint32_t key, GVariant **data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
-	int ret;
+	struct dev_context *devc;
 
-	(void)sdi;
-	(void)data;
 	(void)cg;
 
-	ret = SR_OK;
-	switch (key) {
-	/* TODO */
-	default:
-		return SR_ERR_NA;
-	}
+	devc = sdi->priv;
 
-	return ret;
+	return sr_sw_limits_config_get(&devc->limits, key, data);
 }
 
 static int config_set(uint32_t key, GVariant *data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
-	int ret;
+	struct dev_context *devc;
 
-	(void)sdi;
-	(void)data;
 	(void)cg;
 
-	ret = SR_OK;
-	switch (key) {
-	/* TODO */
-	default:
-		ret = SR_ERR_NA;
-	}
+	devc = sdi->priv;
 
-	return ret;
+	return sr_sw_limits_config_set(&devc->limits, key, data);
 }
 
 static int config_list(uint32_t key, GVariant **data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
-	int ret;
-
-	(void)sdi;
-	(void)data;
-	(void)cg;
-
-	ret = SR_OK;
-	switch (key) {
-	/* TODO */
-	default:
-		return SR_ERR_NA;
-	}
-
-	return ret;
+	return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
 }
 
 static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 {
-	/* TODO: configure hardware, reset acquisition state, set up
-	 * callbacks and send header packet. */
+	struct dev_context *devc;
+	int ret;
 
-	(void)sdi;
+	devc = sdi->priv;
+
+	sr_sw_limits_acquisition_start(&devc->limits);
+	std_session_send_df_header(sdi);
+
+	if ((ret = sr_session_source_add(sdi->session, -1, 0, 500,
+			bosch_glm_receive_data, (void *)sdi)) != SR_OK)
+		return ret;
+
+	//if ((ret = sr_scpi_source_add(sdi->session, scpi, G_IO_IN, 10,
+	//		bosch_glm_receive_data, (void *)sdi)) != SR_OK)
+	//	return ret;
 
 	return SR_OK;
 }
 
 static int dev_acquisition_stop(struct sr_dev_inst *sdi)
 {
-	/* TODO: stop acquisition. */
+	sr_session_source_remove(sdi->session, -1);
 
-	(void)sdi;
+	std_session_send_df_end(sdi);
 
 	return SR_OK;
 }

@@ -28,6 +28,8 @@
 #define LOG_PREFIX "bosch-glm"
 
 struct dev_context {
+	struct sr_sw_limits limits;
+	size_t rfcomm_channel;
 };
 
 SR_PRIV int bosch_glm_receive_data(int fd, int revents, void *cb_data);
