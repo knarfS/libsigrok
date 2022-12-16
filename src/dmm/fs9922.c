@@ -85,7 +85,7 @@ static gboolean flags_valid(const struct fs9922_info *info)
 	return TRUE;
 }
 
-static int parse_value(const uint8_t *buf, float *result, int *exponent)
+static int parse_value(const uint8_t *buf, float *result, int *decimal_places)
 {
 	int sign, intval;
 	float floatval;
@@ -129,6 +129,10 @@ static int parse_value(const uint8_t *buf, float *result, int *exponent)
 
 	/*
 	 * Byte 6: Decimal point position ('0', '1', '2', or '4')
+	 *         0: No decimal point (e.g. '0000')
+	 *         1: 3 decimal places (e.g. '0.000')
+	 *         2: 2 decimal places (e.g. '00.00')
+	 *         4: 1 decimal place  (e.g. '000.0')
 	 *
 	 * Note: The Fortune Semiconductor FS9922-DMM3/4 datasheets both have
 	 * an error/typo here. They claim that the values '0'/'1'/'2'/'3' are
@@ -139,13 +143,13 @@ static int parse_value(const uint8_t *buf, float *result, int *exponent)
 		return SR_ERR;
 	}
 	if (buf[6] == '0')
-		*exponent = 0;
+		*decimal_places = 0;
 	else if (buf[6] == '1')
-		*exponent = -3;
+		*decimal_places = 3;
 	else if (buf[6] == '2')
-		*exponent = -2;
+		*decimal_places = 2;
 	else if (buf[6] == '4')
-		*exponent = -1;
+		*decimal_places = 1;
 
 	/* Apply sign. */
 	floatval *= sign;
@@ -223,20 +227,23 @@ static void parse_flags(const uint8_t *buf, struct fs9922_info *info)
 }
 
 static void handle_flags(struct sr_datafeed_analog *analog, float *floatval,
-			 int *exponent, const struct fs9922_info *info)
+			 int decimal_places, const struct fs9922_info *info)
 {
-	/* Factors */
+	int exponent;
+
+	/* Exponent */
+	exponent = -decimal_places;
 	if (info->is_nano)
-		*exponent -= 9;
+		exponent -= 9;
 	if (info->is_micro)
-		*exponent -= 6;
+		exponent -= 6;
 	if (info->is_milli)
-		*exponent -= 3;
+		exponent -= 3;
 	if (info->is_kilo)
-		*exponent += 3;
+		exponent += 3;
 	if (info->is_mega)
-		*exponent += 6;
-	*floatval *= powf(10, *exponent);
+		exponent += 6;
+	*floatval *= powf(10, exponent);
 
 	/* Measurement modes */
 	if (info->is_volt || info->is_diode) {
@@ -356,21 +363,23 @@ SR_PRIV gboolean sr_fs9922_packet_valid(const uint8_t *buf)
 SR_PRIV int sr_fs9922_parse(const uint8_t *buf, float *floatval,
 			    struct sr_datafeed_analog *analog, void *info)
 {
-	int ret, exponent = 0;
+	int ret, decimal_places;
 	struct fs9922_info *info_local;
 
 	info_local = info;
 
-	if ((ret = parse_value(buf, floatval, &exponent)) != SR_OK) {
+	decimal_places = 0;
+	ret = parse_value(buf, floatval, &decimal_places);
+	if (ret != SR_OK) {
 		sr_dbg("Error parsing value: %d.", ret);
 		return ret;
 	}
 
 	parse_flags(buf, info_local);
-	handle_flags(analog, floatval, &exponent, info_local);
+	handle_flags(analog, floatval, decimal_places, info_local);
 
-	analog->encoding->digits = -exponent;
-	analog->spec->spec_digits = -exponent;
+	analog->encoding->digits = decimal_places;
+	analog->spec->spec_digits = decimal_places;
 
 	return SR_OK;
 }
