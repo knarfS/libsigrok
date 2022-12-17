@@ -104,7 +104,7 @@ static int decode_scale(int point, int digits)
 		sr_dbg("Invalid decimal point %d (%d digits).", point, digits);
 		return 0;
 	}
-	return -pos;
+	return pos;
 }
 
 static int decode_prefix(const uint8_t *buf)
@@ -118,7 +118,7 @@ static int decode_prefix(const uint8_t *buf)
 	return 0;
 }
 
-static float decode_value(const uint8_t *buf, int *exponent)
+static float decode_value(const uint8_t *buf, int *decimal_places)
 {
 	float val = 0.0f;
 	int i, digit;
@@ -132,7 +132,7 @@ static float decode_value(const uint8_t *buf, int *exponent)
 		val = 10.0 * val + digit;
 	}
 
-	*exponent = decode_scale(decode_point(buf), i);
+	*decimal_places = decode_scale(decode_point(buf), i);
 	return val;
 
 special:
@@ -145,7 +145,7 @@ special:
 SR_PRIV int sr_brymen_bm25x_parse(const uint8_t *buf, float *floatval,
 				struct sr_datafeed_analog *analog, void *info)
 {
-	int exponent = 0;
+	int decimal_places, exponent;
 	float val;
 
 	(void)info;
@@ -201,16 +201,17 @@ SR_PRIV int sr_brymen_bm25x_parse(const uint8_t *buf, float *floatval,
 		analog->meaning->unit = SR_UNIT_FAHRENHEIT;
 	}
 
-	val = decode_value(buf, &exponent);
-	exponent += decode_prefix(buf);
+	decimal_places = 0;
+	val = decode_value(buf, &decimal_places);
+	exponent = decode_prefix(buf) - decimal_places;
 	val *= powf(10, exponent);
 
 	if (buf[3] & 1)
 		val = -val;
 
 	*floatval = val;
-	analog->encoding->digits = -exponent;
-	analog->spec->spec_digits = -exponent;
+	analog->encoding->digits = decimal_places;
+	analog->spec->spec_digits = decimal_places;
 
 	return SR_OK;
 }
