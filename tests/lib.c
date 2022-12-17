@@ -160,3 +160,37 @@ GArray *srtest_get_enabled_logic_channels(const struct sr_dev_inst *sdi)
 
 	return channels;
 }
+
+int srtest_analog_init(struct sr_datafeed_analog *analog,
+			struct sr_analog_encoding *encoding,
+			struct sr_analog_meaning *meaning,
+			struct sr_analog_spec *spec,
+			int digits)
+{
+	memset(analog, 0, sizeof(*analog));
+	memset(encoding, 0, sizeof(*encoding));
+	memset(meaning, 0, sizeof(*meaning));
+	memset(spec, 0, sizeof(*spec));
+
+	analog->encoding = encoding;
+	analog->meaning = meaning;
+	analog->spec = spec;
+
+	encoding->unitsize = sizeof(float);
+	encoding->is_float = TRUE;
+#ifdef WORDS_BIGENDIAN
+	encoding->is_bigendian = TRUE;
+#else
+	encoding->is_bigendian = FALSE;
+#endif
+	encoding->digits = digits;
+	encoding->is_digits_decimal = TRUE;
+	encoding->scale.p = 1;
+	encoding->scale.q = 1;
+	encoding->offset.p = 0;
+	encoding->offset.q = 1;
+
+	spec->spec_digits = digits;
+
+	return SR_OK;
+}

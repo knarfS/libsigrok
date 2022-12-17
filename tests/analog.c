@@ -54,40 +54,6 @@ static void swap_bytes(uint8_t *buff, size_t blen)
 	}
 }
 
-static int sr_analog_init_(struct sr_datafeed_analog *analog,
-		struct sr_analog_encoding *encoding,
-		struct sr_analog_meaning *meaning,
-		struct sr_analog_spec *spec,
-		int digits)
-{
-	memset(analog, 0, sizeof(*analog));
-	memset(encoding, 0, sizeof(*encoding));
-	memset(meaning, 0, sizeof(*meaning));
-	memset(spec, 0, sizeof(*spec));
-
-	analog->encoding = encoding;
-	analog->meaning = meaning;
-	analog->spec = spec;
-
-	encoding->unitsize = sizeof(float);
-	encoding->is_float = TRUE;
-#ifdef WORDS_BIGENDIAN
-	encoding->is_bigendian = TRUE;
-#else
-	encoding->is_bigendian = FALSE;
-#endif
-	encoding->digits = digits;
-	encoding->is_digits_decimal = TRUE;
-	encoding->scale.p = 1;
-	encoding->scale.q = 1;
-	encoding->offset.p = 0;
-	encoding->offset.q = 1;
-
-	spec->spec_digits = digits;
-
-	return SR_OK;
-}
-
 START_TEST(test_analog_to_float)
 {
 	int ret;
@@ -100,7 +66,7 @@ START_TEST(test_analog_to_float)
 	struct sr_analog_spec spec;
 	const float v[] = {-12.9, -333.999, 0, 3.1415, 29.7, 989898.121212};
 
-	sr_analog_init_(&analog, &encoding, &meaning, &spec, 3);
+	srtest_analog_init(&analog, &encoding, &meaning, &spec, 3);
 	analog.num_samples = 1;
 	analog.data = &f;
 	meaning.channels = g_slist_append(NULL, &ch);
@@ -125,7 +91,7 @@ START_TEST(test_analog_to_float_null)
 	struct sr_analog_spec spec;
 
 	f = G_PI;
-	sr_analog_init_(&analog, &encoding, &meaning, &spec, 3);
+	srtest_analog_init(&analog, &encoding, &meaning, &spec, 3);
 	analog.num_samples = 1;
 	analog.data = &f;
 
@@ -378,7 +344,7 @@ START_TEST(test_analog_to_float_conv)
 		}
 
 		/* Setup the analog feed description. */
-		sr_analog_init_(&analog, &encoding, &meaning, &spec, 3);
+		srtest_analog_init(&analog, &encoding, &meaning, &spec, 3);
 		analog.num_samples = item->nums;
 		analog.data = &f_in[0];
 		encoding.unitsize = item->unit;
@@ -506,7 +472,7 @@ START_TEST(test_analog_unit_to_string)
 	const int f[] = {SR_MQFLAG_RMS, 0, 0};
 	const char *r[] = {"V RMS", "A", "°C"};
 
-	sr_analog_init_(&analog, &encoding, &meaning, &spec, 3);
+	srtest_analog_init(&analog, &encoding, &meaning, &spec, 3);
 
 	for (i = 0; i < ARRAY_SIZE(r); i++) {
 		meaning.unit = u[i];
@@ -529,7 +495,7 @@ START_TEST(test_analog_unit_to_string_null)
 	struct sr_analog_meaning meaning;
 	struct sr_analog_spec spec;
 
-	sr_analog_init_(&analog, &encoding, &meaning, &spec, 3);
+	srtest_analog_init(&analog, &encoding, &meaning, &spec, 3);
 
 	meaning.unit = SR_UNIT_VOLT;
 	meaning.mqflags = SR_MQFLAG_RMS;
