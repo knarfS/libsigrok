@@ -2355,7 +2355,7 @@ struct fs9721_info {
 };
 
 SR_PRIV gboolean sr_fs9721_packet_valid(const uint8_t *buf);
-SR_PRIV int sr_fs9721_parse(const uint8_t *buf, float *floatval,
+SR_API int sr_fs9721_parse(const uint8_t *buf, float *floatval,
 			    struct sr_datafeed_analog *analog, void *info);
 SR_PRIV void sr_fs9721_00_temp_c(struct sr_datafeed_analog *analog, void *info);
 SR_PRIV void sr_fs9721_01_temp_c(struct sr_datafeed_analog *analog, void *info);
