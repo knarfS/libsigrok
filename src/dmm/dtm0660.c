@@ -128,7 +128,7 @@ static gboolean flags_valid(const struct dtm0660_info *info)
 	return TRUE;
 }
 
-static int parse_value(const uint8_t *buf, float *result, int *exponent)
+static int parse_value(const uint8_t *buf, float *result, int *decimal_places)
 {
 	int i, sign, intval = 0, digits[4];
 	uint8_t digit_bytes[4];
@@ -178,18 +178,18 @@ static int parse_value(const uint8_t *buf, float *result, int *exponent)
 	/* Decimal point position. */
 	if ((buf[3] & 0x01) != 0) {
 		floatval /= 1000;
-		*exponent = -3;
+		*decimal_places = 3;
 		sr_spew("Decimal point after first digit.");
 	} else if ((buf[5] & 0x01) != 0) {
 		floatval /= 100;
-		*exponent = -2;
+		*decimal_places = 2;
 		sr_spew("Decimal point after second digit.");
 	} else if ((buf[7] & 0x01) != 0) {
 		floatval /= 10;
-		*exponent = -1;
+		*decimal_places = 1;
 		sr_spew("Decimal point after third digit.");
 	} else {
-		*exponent = 0;
+		*decimal_places = 0;
 		sr_spew("No decimal point in the number.");
 	}
 
@@ -252,22 +252,23 @@ static void parse_flags(const uint8_t *buf, struct dtm0660_info *info)
 }
 
 static void handle_flags(struct sr_datafeed_analog *analog, float *floatval,
-			 int *exponent, const struct dtm0660_info *info)
+			 const struct dtm0660_info *info)
 {
-	int initial_exponent = *exponent;
+	int exponent;
 
-	/* Factors */
+	/* Exponent */
+	exponent = 0;
 	if (info->is_nano)
-		*exponent -= 9;
+		exponent -= 9;
 	if (info->is_micro)
-		*exponent -= 6;
+		exponent -= 6;
 	if (info->is_milli)
-		*exponent -= 3;
+		exponent -= 3;
 	if (info->is_kilo)
-		*exponent += 3;
+		exponent += 3;
 	if (info->is_mega)
-		*exponent += 6;
-	*floatval *= powf(10, (*exponent - initial_exponent));
+		exponent += 6;
+	*floatval *= powf(10, exponent);
 
 	/* Measurement modes */
 	if (info->is_volt) {
@@ -372,21 +373,23 @@ SR_PRIV gboolean sr_dtm0660_packet_valid(const uint8_t *buf)
 SR_PRIV int sr_dtm0660_parse(const uint8_t *buf, float *floatval,
 			     struct sr_datafeed_analog *analog, void *info)
 {
-	int ret, exponent = 0;
+	int ret, decimal_places;
 	struct dtm0660_info *info_local;
 
 	info_local = info;
 
-	if ((ret = parse_value(buf, floatval, &exponent)) != SR_OK) {
+	decimal_places = 0;
+	ret = parse_value(buf, floatval, &decimal_places);
+	if (ret != SR_OK) {
 		sr_dbg("Error parsing value: %d.", ret);
 		return ret;
 	}
 
 	parse_flags(buf, info_local);
-	handle_flags(analog, floatval, &exponent, info_local);
+	handle_flags(analog, floatval, info_local);
 
-	analog->encoding->digits = -exponent;
-	analog->spec->spec_digits = -exponent;
+	analog->encoding->digits = decimal_places;
+	analog->spec->spec_digits = decimal_places;
 
 	return SR_OK;
 }
