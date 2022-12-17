@@ -63,6 +63,7 @@ Suite *suite_conv(void);
 Suite *suite_dmm_asycii(void);
 Suite *suite_dmm_bm25x(void);
 Suite *suite_dmm_dtm0660(void);
+Suite *suite_dmm_fs9721(void);
 Suite *suite_dmm_fs9922(void);
 
 #endif
