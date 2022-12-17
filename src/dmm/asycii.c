@@ -510,7 +510,7 @@ SR_PRIV gboolean sr_asycii_packet_valid(const uint8_t *buf)
  *		'analog' variable contents are undefined and should not
  *		be used.
  */
-SR_PRIV int sr_asycii_parse(const uint8_t *buf, float *floatval,
+SR_API int sr_asycii_parse(const uint8_t *buf, float *floatval,
 			    struct sr_datafeed_analog *analog, void *info)
 {
 	int ret, decimal_places;
