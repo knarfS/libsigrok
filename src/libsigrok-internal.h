@@ -2482,7 +2482,7 @@ SR_PRIV int sr_rs9lcd_parse(const uint8_t *buf, float *floatval,
 struct bm25x_info { int dummy; };
 
 SR_PRIV gboolean sr_brymen_bm25x_packet_valid(const uint8_t *buf);
-SR_PRIV int sr_brymen_bm25x_parse(const uint8_t *buf, float *floatval,
+SR_API int sr_brymen_bm25x_parse(const uint8_t *buf, float *floatval,
 			     struct sr_datafeed_analog *analog, void *info);
 
 /*--- dmm/bm52x.c -----------------------------------------------------------*/
