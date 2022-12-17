@@ -2425,7 +2425,7 @@ struct dtm0660_info {
 };
 
 SR_PRIV gboolean sr_dtm0660_packet_valid(const uint8_t *buf);
-SR_PRIV int sr_dtm0660_parse(const uint8_t *buf, float *floatval,
+SR_API int sr_dtm0660_parse(const uint8_t *buf, float *floatval,
 			struct sr_datafeed_analog *analog, void *info);
 
 /*--- dmm/m2110.c -----------------------------------------------------------*/

@@ -370,7 +370,7 @@ SR_PRIV gboolean sr_dtm0660_packet_valid(const uint8_t *buf)
  * @return SR_OK upon success, SR_ERR upon failure. Upon errors, the
  *         'analog' variable contents are undefined and should not be used.
  */
-SR_PRIV int sr_dtm0660_parse(const uint8_t *buf, float *floatval,
+SR_API int sr_dtm0660_parse(const uint8_t *buf, float *floatval,
 			     struct sr_datafeed_analog *analog, void *info)
 {
 	int ret, decimal_places;
