@@ -53,10 +53,10 @@
  *
  * @param[in]	buf The text buffer received from the DMM.
  * @param[out]	result A floating point number value.
- * @param[out]	exponent Augments the number value.
+ * @param[out]	decimal_places Number of decimal places of the displayed value.
  */
 static int parse_value(const char *buf, struct asycii_info *info,
-			float *result, int *exponent)
+			float *result, int *decimal_places)
 {
 	char valstr[7 + 1];
 	const char *valp;
@@ -96,7 +96,7 @@ static int parse_value(const char *buf, struct asycii_info *info,
 
 	/*
 	 * Convert the textual number representation to a float, and
-	 * an exponent.
+	 * the decimal places.
 	 */
 	if (sr_atof_ascii(valp, result) != SR_OK) {
 		info->is_invalid = TRUE;
@@ -105,11 +105,11 @@ static int parse_value(const char *buf, struct asycii_info *info,
 	}
 	dot_pos = g_strstr_len(valstr, -1, ".");
 	if (dot_pos)
-		*exponent = -(valstr + strlen(valstr) - dot_pos - 1);
+		*decimal_places = valstr + strlen(valstr) - dot_pos - 1;
 	else
-		*exponent = 0;
-	sr_spew("%s(), display value is %f, exponent %d",
-		__func__, *result, *exponent);
+		*decimal_places = 0;
+	sr_spew("%s(), display value is %f, decimal_places %d",
+		__func__, *result, *decimal_places);
 	return SR_OK;
 }
 
@@ -301,29 +301,28 @@ static void parse_flags(const char *buf, struct asycii_info *info)
  *
  * @param[out]	analog The datafeed which gets filled in.
  * @param[in]	floatval The number value of the measurement.
- * @param[in]	exponent Augments the number value.
  * @param[in]	info Scale and unit and other attributes.
  */
 static void handle_flags(struct sr_datafeed_analog *analog, float *floatval,
-			 int *exponent, const struct asycii_info *info)
+			 const struct asycii_info *info)
 {
-	int factor = 0;
+	int exponent;
 
-	/* Factors */
+	/* Exponent */
+	exponent = 0;
 	if (info->is_pico)
-		factor -= 12;
+		exponent -= 12;
 	if (info->is_nano)
-		factor -= 9;
+		exponent -= 9;
 	if (info->is_micro)
-		factor -= 6;
+		exponent -= 6;
 	if (info->is_milli)
-		factor -= 3;
+		exponent -= 3;
 	if (info->is_kilo)
-		factor += 3;
+		exponent += 3;
 	if (info->is_mega)
-		factor += 6;
-	*floatval *= powf(10, factor);
-	*exponent += factor;
+		exponent += 6;
+	*floatval *= powf(10, exponent);
 
 	/* Measurement modes */
 	if (info->is_volt) {
@@ -514,7 +513,7 @@ SR_PRIV gboolean sr_asycii_packet_valid(const uint8_t *buf)
 SR_PRIV int sr_asycii_parse(const uint8_t *buf, float *floatval,
 			    struct sr_datafeed_analog *analog, void *info)
 {
-	int ret, exponent;
+	int ret, decimal_places;
 	struct asycii_info *info_local;
 
 	info_local = info;
@@ -524,18 +523,18 @@ SR_PRIV int sr_asycii_parse(const uint8_t *buf, float *floatval,
 
 	memset(info_local, 0x00, sizeof(*info_local));
 
-	exponent = 0;
-	ret = parse_value((const char *)buf, info_local, floatval, &exponent);
+	decimal_places = 0;
+	ret = parse_value((const char *)buf, info_local, floatval, &decimal_places);
 	if (ret != SR_OK) {
 		sr_dbg("Error parsing value: %d.", ret);
 		return ret;
 	}
 
 	parse_flags((const char *)buf, info_local);
-	handle_flags(analog, floatval, &exponent, info_local);
+	handle_flags(analog, floatval, info_local);
 
-	analog->encoding->digits = -exponent;
-	analog->spec->spec_digits = -exponent;
+	analog->encoding->digits = decimal_places;
+	analog->spec->spec_digits = decimal_places;
 
 	return SR_OK;
 }
