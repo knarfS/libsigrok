@@ -60,6 +60,7 @@ Suite *suite_device(void);
 Suite *suite_trigger(void);
 Suite *suite_analog(void);
 Suite *suite_conv(void);
+Suite *suite_dmm_asycii(void);
 Suite *suite_dmm_fs9922(void);
 
 #endif
