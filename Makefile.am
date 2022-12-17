@@ -785,6 +785,7 @@ tests_main_SOURCES = \
 	tests/conv.c \
 	tests/dmm_asycii.c \
 	tests/dmm_bm25x.c \
+	tests/dmm_dtm0660.c \
 	tests/dmm_fs9922.c
 
 tests_main_LDADD = libsigrok.la $(SR_EXTRA_LIBS) $(TESTS_LIBS)

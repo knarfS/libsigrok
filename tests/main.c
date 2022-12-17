@@ -48,6 +48,7 @@ int main(void)
 	srunner_add_suite(srunner, suite_conv());
 	srunner_add_suite(srunner, suite_dmm_asycii());
 	srunner_add_suite(srunner, suite_dmm_bm25x());
+	srunner_add_suite(srunner, suite_dmm_dtm0660());
 	srunner_add_suite(srunner, suite_dmm_fs9922());
 
 	srunner_run_all(srunner, CK_VERBOSE);
