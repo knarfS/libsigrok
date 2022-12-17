@@ -119,7 +119,7 @@ struct meterman_info {
 
 static const int decimal_digits[][7] = {
 	[MEAS_MODE_VOLTS]           = { 1, 3, 2, 1, 0, 0, 0, },
-	[MEAS_MODE_RESISTANCE_OHMS] = { 2, 3, 4, 2, 3, 1, 0, },
+	[MEAS_MODE_RESISTANCE_OHMS] = { 2, 3, 1, 2, 3, 1, 0, },
 	[MEAS_MODE_CURRENT_UAMPS]   = { 2, 1, 0, 0, 0, 0, 0, },
 	[MEAS_MODE_CURRENT_MAMPS]   = { 3, 2, 1, 0, 0, 0, 0, },
 	[MEAS_MODE_CURRENT_AMPS]    = { 3, 0, 0, 0, 0, 0, 0, },
@@ -137,7 +137,7 @@ static const int decimal_digits[][7] = {
 
 static const int units_exponents[][7] = {
 	[MEAS_MODE_VOLTS]           = { -3,  0,  0,  0,  0,  0,  0, },
-	[MEAS_MODE_RESISTANCE_OHMS] = {  6,  6,  6,  3,  3,  0,  0, },
+	[MEAS_MODE_RESISTANCE_OHMS] = {  6,  6,  3,  3,  3,  0,  0, },
 	[MEAS_MODE_CURRENT_UAMPS]   = { -6, -6,  0,  0,  0,  0,  0, },
 	[MEAS_MODE_CURRENT_MAMPS]   = { -3, -3, -3,  0,  0,  0,  0, },
 	[MEAS_MODE_CURRENT_AMPS]    = {  0,  0,  0,  0,  0,  0,  0, },
@@ -439,6 +439,7 @@ SR_PRIV int meterman_38xr_parse(const uint8_t *buf, float *floatval,
 		analog->meaning->mqflags |= SR_MQFLAG_MIN;
 	if (mi.rflag_h == 0x0a || mi.peakstatus == 0x0b)
 		analog->meaning->mqflags |= SR_MQFLAG_AUTORANGE;
+	digits = 0;
 	if (mi.meas_mode != MEAS_MODE_CONTINUITY) {
 		digits = decimal_digits[mi.meas_mode][mi.rangecode];
 		exponent = units_exponents[mi.meas_mode][mi.rangecode];
@@ -450,8 +451,8 @@ SR_PRIV int meterman_38xr_parse(const uint8_t *buf, float *floatval,
 		*floatval *= powf(10, -digits);
 		*floatval *= powf(10, exponent);
 	}
-	analog->encoding->digits = 4;
-	analog->spec->spec_digits = 4;
+	analog->encoding->digits = digits;
+	analog->spec->spec_digits = digits;
 
 	return SR_OK;
 }
