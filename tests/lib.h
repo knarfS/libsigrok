@@ -61,6 +61,7 @@ Suite *suite_trigger(void);
 Suite *suite_analog(void);
 Suite *suite_conv(void);
 Suite *suite_dmm_asycii(void);
+Suite *suite_dmm_bm25x(void);
 Suite *suite_dmm_fs9922(void);
 
 #endif
