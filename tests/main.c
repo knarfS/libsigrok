@@ -51,6 +51,7 @@ int main(void)
 	srunner_add_suite(srunner, suite_dmm_dtm0660());
 	srunner_add_suite(srunner, suite_dmm_fs9721());
 	srunner_add_suite(srunner, suite_dmm_fs9922());
+	srunner_add_suite(srunner, suite_dmm_mm38xr());
 
 	srunner_run_all(srunner, CK_VERBOSE);
 	ret = srunner_ntests_failed(srunner);

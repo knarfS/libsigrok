@@ -65,5 +65,6 @@ Suite *suite_dmm_bm25x(void);
 Suite *suite_dmm_dtm0660(void);
 Suite *suite_dmm_fs9721(void);
 Suite *suite_dmm_fs9922(void);
+Suite *suite_dmm_mm38xr(void);
 
 #endif
