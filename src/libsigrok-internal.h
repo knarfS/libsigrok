@@ -2370,7 +2370,7 @@ SR_PRIV void sr_fs9721_max_c_min(struct sr_datafeed_analog *analog, void *info);
 struct meterman_38xr_info { int dummy; };
 
 SR_PRIV gboolean meterman_38xr_packet_valid(const uint8_t *buf);
-SR_PRIV int meterman_38xr_parse(const uint8_t *buf, float *floatval,
+SR_API int meterman_38xr_parse(const uint8_t *buf, float *floatval,
 	struct sr_datafeed_analog *analog, void *info);
 
 /*--- dmm/ms2115b.c ---------------------------------------------------------*/

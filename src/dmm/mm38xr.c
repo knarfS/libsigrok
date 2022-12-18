@@ -337,7 +337,7 @@ SR_PRIV gboolean meterman_38xr_packet_valid(const uint8_t *buf)
 	return TRUE;
 }
 
-SR_PRIV int meterman_38xr_parse(const uint8_t *buf, float *floatval,
+SR_API int meterman_38xr_parse(const uint8_t *buf, float *floatval,
 	struct sr_datafeed_analog *analog, void *info)
 {
 	gboolean is_overload, is_bad_jack;
