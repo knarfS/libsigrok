@@ -417,7 +417,7 @@ static int ms2115b_parse(const uint8_t *buf, float *floatval,
  * @return SR_OK upon success, SR_ERR upon failure. Upon errors, the
  *         'analog' variable contents are undefined and should not be used.
  */
-SR_PRIV int sr_ms2115b_parse(const uint8_t *buf, float *floatval,
+SR_API int sr_ms2115b_parse(const uint8_t *buf, float *floatval,
 		struct sr_datafeed_analog *analog, void *info)
 {
 	int ret;
