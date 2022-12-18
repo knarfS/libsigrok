@@ -195,6 +195,9 @@ libsigrok_la_SOURCES += \
 	src/dmm/ut71x.c \
 	src/dmm/vc870.c \
 	src/dmm/vc96.c
+if HAVE_CHECK
+libsigrok_la_SOURCES += src/dmm/tests_dmm.c
+endif
 
 # Hardware (LCR chip parsers)
 if NEED_SERIAL

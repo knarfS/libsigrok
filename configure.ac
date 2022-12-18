@@ -176,6 +176,7 @@ AM_CONDITIONAL([NEED_SERIAL], [test "x$sr_have_serial_comm" = xyes])
 # The Check unit testing framework is optional. Disable if not found.
 SR_PKG_CHECK([check], [SR_PKGLIBS_TESTS], [check >= 0.9.4])
 AM_CONDITIONAL([HAVE_CHECK], [test "x$sr_have_check" = xyes])
+AC_DEFINE([HAVE_CHECK], [1], [Specifies whether the check(3) library is available.])
 
 # Enable the C99 standard if possible, and enforce the use
 # of SR_API to explicitly mark all public API functions.

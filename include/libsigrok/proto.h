@@ -282,4 +282,10 @@ SR_API const char *sr_lib_version_string_get(void);
 SR_API const char *sr_strerror(int error_code);
 SR_API const char *sr_strerror_name(int error_code);
 
+/*--- test suite ------------------------------------------------------------*/
+/* Provide public library routines, accessible to external test applications. */
+
+struct Suite;
+SR_API struct Suite *suite_dmm_packets(void);
+
 #endif
