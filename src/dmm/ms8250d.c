@@ -23,7 +23,7 @@
  * MASTECH MS8250D protocol parser.
  *
  * Sends 18 bytes.
- * 40 02 32 75 53 33 35 5303 10 00 00 00 00 00 00 10 00
+ * 40 02 32 75 53 33 35 53 03 10 00 00 00 00 00 00 10 00
  *
  * - Communication parameters: Unidirectional, 2400/8n1
  * - CP2102 USB to UART bridge controller
@@ -40,7 +40,7 @@
 #define LOG_PREFIX "ms8250d"
 
 /*
- * Main display (7-segment LCD value): xxDGA xxEF xxxx xxCB
+ * Main display (7-segment LCD value): xDGA xxEF xxxx xxCB
  * https://en.wikipedia.org/wiki/Seven-segment_display
  */
 static int parse_digit(uint16_t b)
@@ -76,7 +76,7 @@ static int parse_digit(uint16_t b)
 	}
 }
 
-/* Parse second display. */
+/* Second display (7-segment LCD value): xEFA DCGB */
 static int parse_digit2(uint16_t b)
 {
 	switch (b) {
@@ -87,6 +87,7 @@ static int parse_digit2(uint16_t b)
 	case 0x05:
 		return 1;
 	case 0x1B:
+	case 0x5B:
 		return 2;
 	case 0x1F:
 		return 3;
@@ -186,20 +187,23 @@ static gboolean flags_valid(const struct ms8250d_info *info)
 }
 
 static void handle_flags(struct sr_datafeed_analog *analog, float *floatval,
-		int *exponent, const struct ms8250d_info *info)
+		int decimal_places, const struct ms8250d_info *info)
 {
-	/* Factors */
+	int exponent;
+
+	/* Exponent */
+	exponent = -decimal_places;
 	if (info->is_nano)
-		*exponent -= 9;
+		exponent -= 9;
 	if (info->is_micro)
-		*exponent -= 6;
+		exponent -= 6;
 	if (info->is_milli)
-		*exponent -= 3;
+		exponent -= 3;
 	if (info->is_kilo)
-		*exponent += 3;
+		exponent += 3;
 	if (info->is_mega)
-		*exponent += 6;
-	*floatval *= powf(10, *exponent);
+		exponent += 6;
+	*floatval *= powf(10, exponent);
 
 	/* Measurement modes */
 	if (info->is_volt) {
@@ -295,7 +299,7 @@ SR_PRIV gboolean sr_ms8250d_packet_valid(const uint8_t *buf)
 SR_PRIV int sr_ms8250d_parse(const uint8_t *buf, float *floatval,
 		struct sr_datafeed_analog *analog, void *info)
 {
-	int exponent = 0, sec_exponent = 0, sign;
+	int decimal_places, sec_decimal_places, sign;
 	float sec_floatval;
 
 	/* buf[0] bar display. */
@@ -315,17 +319,18 @@ SR_PRIV int sr_ms8250d_parse(const uint8_t *buf, float *floatval,
 	sr_dbg("Digits: %d %d %d %d.", digit1, digit2, digit3, digit4);
 
 	/* Decimal point position. */
+	decimal_places = 0;
 	if ((buf[3] & (1 << 6)) != 0) {
-		exponent = -3;
+		decimal_places = 3;
 		sr_spew("Decimal point after first digit.");
 	} else if ((buf[5] & (1 << 6)) != 0) {
-		exponent = -2;
+		decimal_places = 2;
 		sr_spew("Decimal point after second digit.");
 	} else if ((buf[7] & (1 << 2)) != 0) {
-		exponent = -1;
+		decimal_places = 1;
 		sr_spew("Decimal point after third digit.");
 	} else {
-		exponent = 0;
+		decimal_places = 0;
 		sr_spew("No decimal point in the number.");
 	}
 
@@ -348,33 +353,34 @@ SR_PRIV int sr_ms8250d_parse(const uint8_t *buf, float *floatval,
 		sec_digit1, sec_digit2, sec_digit3, sec_digit4);
 
 	/* Second display decimal point position. */
+	sec_decimal_places = 0;
 	if ((buf[14] & (1 << 7)) != 0) {
-		sec_exponent = -3;
+		sec_decimal_places = 3;
 		sr_spew("Sec decimal point after first digit.");
 	} else if ((buf[13] & (1 << 7)) != 0) {
-		sec_exponent = -2;
+		sec_decimal_places = 2;
 		sr_spew("Sec decimal point after second digit.");
 	} else if ((buf[12] & (1 << 7)) != 0) {
-		sec_exponent = -1;
+		sec_decimal_places = 1;
 		sr_spew("Sec decimal point after third digit.");
 	} else {
-		sec_exponent = 0;
+		sec_decimal_places = 0;
 		sr_spew("Sec no decimal point in the number.");
 	}
 
 	*floatval = (double)((digit1 * 1000) + (digit2 * 100) + (digit3 * 10) + digit4);
 
 	sec_floatval = (double)(sec_digit1 * 1000) + (sec_digit2 * 100) + (sec_digit3 * 10) + sec_digit4;
-	sec_floatval *= powf(10, sec_exponent);
+	sec_floatval *= powf(10, -sec_decimal_places);
 
 	/* Apply sign. */
 	*floatval *= sign;
 
-	handle_flags(analog, floatval, &exponent, info_local);
+	handle_flags(analog, floatval, decimal_places, info_local);
 
 	/* Check for "OL". */
 	if (digit3 == 0x0F) {
-		sr_spew("Over limit.");
+		sr_warn("Over limit.");
 		*floatval = INFINITY;
 		return SR_OK;
 	}
@@ -382,8 +388,8 @@ SR_PRIV int sr_ms8250d_parse(const uint8_t *buf, float *floatval,
 	sr_spew("The display value is %f.", (double)*floatval);
 	sr_spew("The 2nd display value is %f.", sec_floatval);
 
-	analog->encoding->digits = -exponent;
-	analog->spec->spec_digits = -exponent;
+	analog->encoding->digits = decimal_places;
+	analog->spec->spec_digits = decimal_places;
 
 	return SR_OK;
 }
