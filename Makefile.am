@@ -788,7 +788,8 @@ tests_main_SOURCES = \
 	tests/dmm_dtm0660.c \
 	tests/dmm_fs9721.c \
 	tests/dmm_fs9922.c \
-	tests/dmm_mm38xr.c
+	tests/dmm_mm38xr.c \
+	tests/dmm_ms2115b.c
 
 tests_main_LDADD = libsigrok.la $(SR_EXTRA_LIBS) $(TESTS_LIBS)
 
