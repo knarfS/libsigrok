@@ -170,42 +170,80 @@ enum {
 	MODE_HZ = 6,
 };
 
-static const int res_exp[] = {
-	-1,     /* 600.0 Ohm  (x 0.1)   */
-	-3 + 3, /* 6.000 kOhm (x 0.001) */
-	-2 + 3, /* 60.00 kOhm (x 0.01)  */
-	-1 + 3, /* 600.0 kOhm (x 0.1)   */
-	-3 + 6, /* 6.000 MOhm (x 0.001) */
-	-2 + 6, /* 60.00 MOhm (x 0.01)  */
+static const int res_decimal_places[] = {
+	1, /* 600.0 Ohm  (x 0.1)   */
+	3, /* 6.000 kOhm (x 0.001) */
+	2, /* 60.00 kOhm (x 0.01)  */
+	1, /* 600.0 kOhm (x 0.1)   */
+	3, /* 6.000 MOhm (x 0.001) */
+	2, /* 60.00 MOhm (x 0.01)  */
 };
 
-static const int cap_exp[] = {
-	-3 - 9, /* 6.000 nF (x 0.001) */
-	-2 - 9, /* 60.00 nF (x 0.01)  */
-	-1 - 9, /* 600.0 nF (x 0.1)   */
-	-3 - 6, /* 6.000 uF (x 0.001) */
-	-2 - 6, /* 60.00 uF (x 0.01)  */
-	-1 - 6, /* 600.0 uF (x 0.1)   */
-	-3 - 3, /* 6.000 mF (x 0.001) */
-	-2 - 3, /* 60.00 mF (x 0.01)  */
+static const int res_exponent[] = {
+	0, /* 600.0 Ohm  (x 0.1)   */
+	3, /* 6.000 kOhm (x 0.001) */
+	3, /* 60.00 kOhm (x 0.01)  */
+	3, /* 600.0 kOhm (x 0.1)   */
+	6, /* 6.000 MOhm (x 0.001) */
+	6, /* 60.00 MOhm (x 0.01)  */
 };
 
-static const int hz_exp[] = {
-	-2,     /* 60.00 Hz  (x 0.01)  */
-	-1,     /* 600.0 Hz  (x 0.1)   */
-	-3 + 3, /* 6.000 kHz (x 0.001) */
-	-2 + 3, /* 60.00 kHz (x 0.01)  */
-	-1 + 3, /* 600.0 kHz (x 0.1)   */
-	-3 + 6, /* 6.000 MHz (x 0.001) */
-	-2 + 6, /* 60.00 MHz (x 0.01)  */
+static const int cap_decimal_places[] = {
+	3, /* 6.000 nF (x 0.001) */
+	2, /* 60.00 nF (x 0.01)  */
+	1, /* 600.0 nF (x 0.1)   */
+	3, /* 6.000 uF (x 0.001) */
+	2, /* 60.00 uF (x 0.01)  */
+	1, /* 600.0 uF (x 0.1)   */
+	3, /* 6.000 mF (x 0.001) */
+	2, /* 60.00 mF (x 0.01)  */
 };
 
-static const int v_exp[] = {
-	-1 - 3, /* 600.0 mV (x 0.1)   */
-	-3,     /* 6.000 V  (x 0.001) */
-	-2,     /* 60.00 V  (x 0.01)  */
-	-1,     /* 600.0 V  (x 0.1)   */
-	0,      /* 1000  V  (x 1)     */
+static const int cap_exponent[] = {
+	-9, /* 6.000 nF (x 0.001) */
+	-9, /* 60.00 nF (x 0.01)  */
+	-9, /* 600.0 nF (x 0.1)   */
+	-6, /* 6.000 uF (x 0.001) */
+	-6, /* 60.00 uF (x 0.01)  */
+	-6, /* 600.0 uF (x 0.1)   */
+	-3, /* 6.000 mF (x 0.001) */
+	-3, /* 60.00 mF (x 0.01)  */
+};
+
+static const int hz_decimal_places[] = {
+	2, /* 60.00 Hz  (x 0.01)  */
+	1, /* 600.0 Hz  (x 0.1)   */
+	3, /* 6.000 kHz (x 0.001) */
+	2, /* 60.00 kHz (x 0.01)  */
+	1, /* 600.0 kHz (x 0.1)   */
+	3, /* 6.000 MHz (x 0.001) */
+	2, /* 60.00 MHz (x 0.01)  */
+};
+
+static const int hz_exponent[] = {
+	0, /* 60.00 Hz  (x 0.01)  */
+	0, /* 600.0 Hz  (x 0.1)   */
+	3, /* 6.000 kHz (x 0.001) */
+	3, /* 60.00 kHz (x 0.01)  */
+	3, /* 600.0 kHz (x 0.1)   */
+	6, /* 6.000 MHz (x 0.001) */
+	6, /* 60.00 MHz (x 0.01)  */
+};
+
+static const int v_decimal_places[] = {
+	1, /* 600.0 mV (x 0.1)   */
+	3, /* 6.000 V  (x 0.001) */
+	2, /* 60.00 V  (x 0.01)  */
+	1, /* 600.0 V  (x 0.1)   */
+	0, /* 1000  V  (x 1)     */
+};
+
+static const int v_exponent[] = {
+	-3, /* 600.0 mV (x 0.1)   */
+	0,  /* 6.000 V  (x 0.001) */
+	0,  /* 60.00 V  (x 0.01)  */
+	0,  /* 600.0 V  (x 0.1)   */
+	0,  /* 1000  V  (x 1)     */
 };
 
 SR_PRIV const char *ms2115b_channel_formats[MS2115B_DISPLAY_COUNT] = {
@@ -215,7 +253,7 @@ SR_PRIV const char *ms2115b_channel_formats[MS2115B_DISPLAY_COUNT] = {
 static int ms2115b_parse(const uint8_t *buf, float *floatval,
 	struct sr_datafeed_analog *analog, void *info)
 {
-	int exponent = 0;
+	int decimal_places, exponent;
 	float up_limit = 6000.0;
 	gboolean sign = FALSE;
 
@@ -229,10 +267,14 @@ static int ms2115b_parse(const uint8_t *buf, float *floatval,
 	memset(info_local, 0, sizeof(*info_local));
 	info_local->ch_idx = display;
 
+	decimal_places = 0;
+	exponent = 0;
+
 	switch (display) {
 	case MS2115B_DISPLAY_MAIN:
 		switch (mode) {
 		case MODE_A600_1000:
+			decimal_places = 1;
 			exponent = -1;
 			sign = TRUE;
 			info_local->is_ampere = TRUE;
@@ -242,6 +284,7 @@ static int ms2115b_parse(const uint8_t *buf, float *floatval,
 				info_local->is_ac = TRUE;
 			break;
 		case MODE_A60:
+			decimal_places = 2;
 			exponent = -2;
 			sign = TRUE;
 			info_local->is_ampere = TRUE;
@@ -251,9 +294,12 @@ static int ms2115b_parse(const uint8_t *buf, float *floatval,
 				info_local->is_ac = TRUE;
 			break;
 		case MODE_V:
-			if (range >= ARRAY_SIZE(v_exp))
+			if (range >= ARRAY_SIZE(v_decimal_places))
 				return SR_ERR;
-			exponent = v_exp[range];
+			if (range >= ARRAY_SIZE(v_exponent))
+				return SR_ERR;
+			decimal_places = v_decimal_places[range];
+			exponent = v_exponent[range] - decimal_places;
 			sign = TRUE;
 			info_local->is_volt = TRUE;
 			if (func)
@@ -263,6 +309,7 @@ static int ms2115b_parse(const uint8_t *buf, float *floatval,
 			break;
 		case MODE_DIODE_BEEP:
 			if (func) {
+				decimal_places = 3;
 				exponent = -3;
 				up_limit = 2500.0;
 				info_local->is_diode = TRUE;
@@ -271,22 +318,31 @@ static int ms2115b_parse(const uint8_t *buf, float *floatval,
 			}
 			break;
 		case MODE_OHM:
-			if (range >= ARRAY_SIZE(res_exp))
+			if (range >= ARRAY_SIZE(res_decimal_places))
 				return SR_ERR;
-			exponent = res_exp[range];
+			if (range >= ARRAY_SIZE(res_exponent))
+				return SR_ERR;
+			decimal_places = res_decimal_places[range];
+			exponent = res_exponent[range] - decimal_places;
 			info_local->is_ohm = TRUE;
 			break;
 		case MODE_CAP:
-			if (range >= ARRAY_SIZE(cap_exp))
+			if (range >= ARRAY_SIZE(cap_decimal_places))
 				return SR_ERR;
-			exponent = cap_exp[range];
+			if (range >= ARRAY_SIZE(cap_exponent))
+				return SR_ERR;
+			decimal_places = cap_decimal_places[range];
+			exponent = cap_exponent[range] - decimal_places;
 			info_local->is_farad = TRUE;
 			break;
 		case MODE_HZ:
 			range = (buf[3] & 7);
-			if (range >= ARRAY_SIZE(hz_exp))
+			if (range >= ARRAY_SIZE(hz_decimal_places))
 				return SR_ERR;
-			exponent = hz_exp[range];
+			if (range >= ARRAY_SIZE(hz_exponent))
+				return SR_ERR;
+			decimal_places = hz_decimal_places[range];
+			exponent = hz_exponent[range] - decimal_places;
 			info_local->is_hz = TRUE;
 			break;
 		default:
@@ -311,11 +367,13 @@ static int ms2115b_parse(const uint8_t *buf, float *floatval,
 
 			/* AC */
 			info_local->is_hz = TRUE;
+			decimal_places = 2;
 			exponent = -2;
 			break;
 		case MODE_HZ:
 			info_local->is_duty_cycle = TRUE;
 			info_local->is_percent = TRUE;
+			decimal_places = 1;
 			exponent = -1;
 			break;
 		default:
@@ -338,8 +396,8 @@ static int ms2115b_parse(const uint8_t *buf, float *floatval,
 
 	handle_flags(analog, floatval, info_local);
 
-	analog->encoding->digits = -exponent;
-	analog->spec->spec_digits = -exponent;
+	analog->encoding->digits = decimal_places;
+	analog->spec->spec_digits = decimal_places;
 
 	return SR_OK;
 }
