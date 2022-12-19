@@ -40,6 +40,17 @@ SR_API Suite *suite_dmm_packet_parsers(void)
 
 	s = suite_create("dmm_packet_parsers");
 
+	register_tests_asycii(s);
+	register_tests_bm25x(s);
+	register_tests_dtm0660(s);
+	register_tests_fs9721(s);
+	register_tests_fs9922(s);
+	register_tests_metex14(s);
+	register_tests_mm38xr(s);
+	// register_tests_ms2115b(s);
+	register_tests_ms8250d(s);
+	register_tests_rs9lcd(s);
+
 	return s;
 }
 

@@ -197,7 +197,17 @@ libsigrok_la_SOURCES += \
 	src/dmm/vc96.c
 # Tests for DMM packet parsers
 if HAVE_CHECK
-libsigrok_la_SOURCES += src/dmm/tests_dmm.c
+libsigrok_la_SOURCES += src/dmm/tests_dmm.c \
+	src/dmm/tests_asycii.c \
+	src/dmm/tests_bm25x.c \
+	src/dmm/tests_dtm0660.c \
+	src/dmm/tests_fs9721.c \
+	src/dmm/tests_fs9922.c \
+	src/dmm/tests_metex14.c \
+	src/dmm/tests_mm38xr.c \
+	src/dmm/tests_ms2115b.c \
+	src/dmm/tests_ms8250d.c \
+	src/dmm/tests_rs9lcd.c
 endif
 
 # Hardware (LCR chip parsers)
