@@ -255,14 +255,17 @@ static uint8_t decode_digit(uint8_t raw_digit)
 }
 
 static double lcd_to_double(const struct rs9lcd_packet *rs_packet, int type,
-			    int *exponent)
+			    int *decimal_places)
 {
-	double rawval = 0;
+	int exponent;
+	double rawval;
 	uint8_t digit, raw_digit;
-	gboolean dp_reached = FALSE;
+	gboolean dp_reached;
 	int i, end;
 
-	*exponent = 0;
+	*decimal_places = 0;
+	rawval = 0;
+	dp_reached = FALSE;
 
 	/* end = 1: Don't parse last digit. end = 0: Parse all digits. */
 	end = (type == READ_TEMP) ? 1 : 0;
@@ -282,25 +285,26 @@ static double lcd_to_double(const struct rs9lcd_packet *rs_packet, int type,
 		if ((i < 3) && (raw_digit & DP_MASK))
 			dp_reached = TRUE;
 		if (dp_reached)
-			*exponent -= 1;
+			*decimal_places += 1;
 		rawval = rawval * 10 + digit;
 	}
 	if (rs_packet->info & INFO_NEG)
 		rawval *= -1;
 
 	/* See if we need to multiply our raw value by anything. */
+	exponent = -*decimal_places;
 	if (rs_packet->indicatrix2 & IND2_NANO)
-		*exponent -= 9;
+		exponent -= 9;
 	else if (rs_packet->indicatrix2 & IND2_MICRO)
-		*exponent -= 6;
+		exponent -= 6;
 	else if (rs_packet->indicatrix1 & IND1_MILI)
-		*exponent -= 3;
+		exponent-= 3;
 	else if (rs_packet->indicatrix1 & IND1_KILO)
-		*exponent += 3;
+		exponent += 3;
 	else if (rs_packet->indicatrix1 & IND1_MEGA)
-		*exponent += 6;
+		exponent += 6;
 
-	return rawval * powf(10, *exponent);
+	return rawval * powf(10, exponent);
 }
 
 static gboolean is_celsius(const struct rs9lcd_packet *rs_packet)
@@ -438,8 +442,8 @@ SR_PRIV int sr_rs9lcd_parse(const uint8_t *buf, float *floatval,
 
 	*floatval = rawval;
 
-	analog->encoding->digits = -exponent;
-	analog->spec->spec_digits = -exponent;
+	analog->encoding->digits = exponent;
+	analog->spec->spec_digits = exponent;
 
 	return SR_OK;
 }
