@@ -285,7 +285,8 @@ SR_API const char *sr_strerror_name(int error_code);
 /*--- test suite ------------------------------------------------------------*/
 /* Provide public library routines, accessible to external test applications. */
 
-struct Suite;
-SR_API struct Suite *suite_dmm_packets(void);
+#if defined HAVE_CHECK && HAVE_CHECK
+SR_API struct Suite *suite_dmm_packet_parsers(void);
+#endif
 
 #endif

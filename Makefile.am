@@ -195,6 +195,7 @@ libsigrok_la_SOURCES += \
 	src/dmm/ut71x.c \
 	src/dmm/vc870.c \
 	src/dmm/vc96.c
+# Tests for DMM packet parsers
 if HAVE_CHECK
 libsigrok_la_SOURCES += src/dmm/tests_dmm.c
 endif
