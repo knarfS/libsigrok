@@ -197,7 +197,8 @@ libsigrok_la_SOURCES += \
 	src/dmm/vc96.c
 # Tests for DMM packet parsers
 if HAVE_CHECK
-libsigrok_la_SOURCES += src/dmm/tests_dmm.c
+libsigrok_la_SOURCES += src/dmm/tests_dmm.c \
+	src/dmm/tests_fs9922.c
 endif
 
 # Hardware (LCR chip parsers)

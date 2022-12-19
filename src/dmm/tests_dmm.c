@@ -40,6 +40,8 @@ SR_API Suite *suite_dmm_packet_parsers(void)
 
 	s = suite_create("dmm_packet_parsers");
 
+	register_tests_fs9922(s);
+
 	return s;
 }
 

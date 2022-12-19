@@ -22,6 +22,9 @@
 
 #include "config.h"
 
+#if defined HAVE_CHECK && HAVE_CHECK
+#include <check.h>
+#endif
 #include <glib.h>
 #ifdef HAVE_LIBHIDAPI
 #include <hidapi.h>
@@ -1599,6 +1602,14 @@ struct drv_context {
 	GSList *instances;
 };
 
+/*--- asserts ---------------------------------------------------------------*/
+
+static inline gboolean sr_check_float_eq_tol(float value, float expected_value,
+	  float tolerance)
+{
+	return fabsl(expected_value - value) < tolerance;
+}
+
 /*--- log.c -----------------------------------------------------------------*/
 
 #if defined(_WIN32) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
@@ -2595,6 +2606,12 @@ struct vc96_info {
 SR_PRIV gboolean sr_vc96_packet_valid(const uint8_t *buf);
 SR_PRIV int sr_vc96_parse(const uint8_t *buf, float *floatval,
 		struct sr_datafeed_analog *analog, void *info);
+
+/*--- Register functions for dmm/ packet parser tests ------------------------*/
+
+#if defined HAVE_CHECK && HAVE_CHECK
+SR_PRIV void register_tests_fs9922(Suite *s);
+#endif
 
 /*--- lcr/es51919.c ---------------------------------------------------------*/
 
