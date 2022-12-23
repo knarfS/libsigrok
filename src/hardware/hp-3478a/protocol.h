@@ -150,8 +150,8 @@ struct dev_context {
 	enum sr_mqflag acquisition_mq_flags;
 	enum sr_unit measurement_unit;
 	int range_exp;
-	uint8_t enc_digits;
-	uint8_t spec_digits;
+	uint8_t digits;
+	uint8_t sr_digits;
 
 	enum terminal_connector terminal;
 	enum trigger_state trigger;
