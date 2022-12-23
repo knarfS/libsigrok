@@ -436,28 +436,28 @@ START_TEST(test_analog_si_prefix)
 		float output_value;
 		int output_digits;
 		const char *output_si_prefix;
+		float output_tolerance;
 	} v[] = {
-		{   12.0     ,  0,  12.0  ,    0, ""  },
-		{   12.0     ,  1,  12.0  ,    1, ""  },
-		{   12.0     , -1,   0.012,    2, "k" },
-		{ 1024.0     ,  0,   1.024,    3, "k" },
-		{ 1024.0     , -1,   1.024,    2, "k" },
-		{ 1024.0     , -3,   1.024,    0, "k" },
-		{   12.0e5   ,  0,   1.2,      6, "M" },
-		{    0.123456,  0,   0.123456, 0, ""  },
-		{    0.123456,  1,   0.123456, 1, ""  },
-		{    0.123456,  2,   0.123456, 2, ""  },
-		{    0.123456,  3, 123.456,    0, "m" },
-		{    0.123456,  4, 123.456,    1, "m" },
-		{    0.123456,  5, 123.456,    2, "m" },
-		{    0.123456,  6, 123.456,    3, "m" },
-		{    0.123456,  7, 123.456,    4, "m" },
-		{    0.0123  ,  4,  12.3,      1, "m" },
-		{    0.00123 ,  5,   1.23,     2, "m" },
-		{    0.000123,  4,   0.123,    1, "m" },
-		{    0.000123,  5,   0.123,    2, "m" },
-		{    0.000123,  6, 123.0,      0, "µ" },
-		{    0.000123,  7, 123.0,      1, "µ" },
+		{   12.0     ,  1,  12.0  ,    1,  "", .01      },
+		{   12.0     , -1,   0.012,    2, "k", .0001    },
+		{ 1024.0     ,  0,   1.024,    3, "k", .0001    },
+		{ 1024.0     , -1,   1.024,    2, "k", .0001    },
+		{ 1024.0     , -3,   1.024,    0, "k", .0001    },
+		{   12.0e5   ,  0,   1.2,      6, "M", .01      },
+		{    0.123456,  0,   0.123456, 0,  "", .0000001 },
+		{    0.123456,  1,   0.123456, 1,  "", .0000001 },
+		{    0.123456,  2,   0.123456, 2,  "", .0000001 },
+		{    0.123456,  3, 123.456,    0, "m", .001     },
+		{    0.123456,  4, 123.456,    1, "m", .001     },
+		{    0.123456,  5, 123.456,    2, "m", .001     },
+		{    0.123456,  6, 123.456,    3, "m", .001     },
+		{    0.123456,  7, 123.456,    4, "m", .001     },
+		{    0.0123  ,  4,  12.3,      1, "m", .01      },
+		{    0.00123 ,  5,   1.23,     2, "m", .001     },
+		{    0.000123,  4,   0.123,    1, "m", .0001    },
+		{    0.000123,  5,   0.123,    2, "m", .0001    },
+		{    0.000123,  6, 123.0,      0, "µ", .1       },
+		{    0.000123,  7, 123.0,      1, "µ", .01      },
 	};
 
 	for (unsigned int i = 0; i < ARRAY_SIZE(v); i++) {
@@ -465,15 +465,15 @@ START_TEST(test_analog_si_prefix)
 		int digits = v[i].input_digits;
 		const char *si_prefix = sr_analog_si_prefix(&value, &digits);
 
-		fail_unless(fabs(value - v[i].output_value) <= 0.00001,
-			"sr_analog_si_prefix() unexpected output value %f (i=%d).",
-			value , i);
+		fail_unless(fabs(value - v[i].output_value) <= v[i].output_tolerance,
+			"sr_analog_si_prefix() output value %f but expected %f (i=%d).",
+			value, v[i].output_value, i);
 		fail_unless(digits == v[i].output_digits,
-			"sr_analog_si_prefix() unexpected output digits %d (i=%d).",
-			digits, i);
+			"sr_analog_si_prefix() output digits %d but expected %d (i=%d).",
+			digits, v[i].output_digits, i);
 		fail_unless(!strcmp(si_prefix, v[i].output_si_prefix),
-			"sr_analog_si_prefix() unexpected output prefix \"%s\" (i=%d).",
-			si_prefix, i);
+			"sr_analog_si_prefix() output prefix \"%s\" but expected \"%s\" (i=%d).",
+			si_prefix, v[i].output_si_prefix, i);
 	}
 }
 END_TEST
