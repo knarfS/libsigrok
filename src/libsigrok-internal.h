@@ -1599,6 +1599,64 @@ struct drv_context {
 	GSList *instances;
 };
 
+struct sr_dev_dmm_driver {
+	/** libsigrok driver info struct. */
+	struct sr_dev_driver di;
+	/** Manufacturer/brand. */
+	const char *vendor;
+	/** Model. */
+	const char *device;
+	/** conn string. */
+	const char *conn;
+	/** serialcomm string. */
+	const char *serialcomm;
+	/** Packet size in bytes. */
+	size_t packet_size;
+	/**
+	 * Request timeout [ms] before request is considered lost and a new
+	 * one is sent. Used only if device needs polling.
+	 */
+	uint64_t req_timeout_ms;
+	/**
+	 * Delay between reception of packet and next request. Some DMMs
+	 * need this. Used only if device needs polling.
+	 */
+	uint64_t req_delay_ms;
+	/** Packet request function. */
+	int (*packet_request)(struct sr_serial_dev_inst *);
+	/** Number of channels / displays. */
+	size_t channel_count;
+	/** (Optional) printf formats for channel names. */
+	const char **channel_formats;
+	/** Packet validation function. */
+	gboolean (*packet_valid)(const uint8_t *);
+	/** Packet parsing function. */
+	int (*packet_parse)(const uint8_t *, float *,
+			    struct sr_datafeed_analog *, void *);
+	/** */
+	void (*dmm_details)(struct sr_datafeed_analog *, void *);
+	/** Size of chipset info struct. */
+	gsize info_size;
+	/* Serial-dmm items "with state" and variable length packets. */
+	void *dmm_state;
+	void *(*dmm_state_init)(void);
+	void (*dmm_state_free)(void *state);
+	int (*after_open)(struct sr_serial_dev_inst *serial);
+	int (*packet_valid_len)(void *state, const uint8_t *data, size_t dlen,
+		size_t *pkt_len);
+	int (*packet_parse_len)(void *state, const uint8_t *data, size_t dlen,
+		double *val, struct sr_datafeed_analog *analog, void *info);
+	int (*config_get)(void *state, uint32_t key, GVariant **data,
+		const struct sr_dev_inst *sdi, const struct sr_channel_group *cg);
+	int (*config_set)(void *state, uint32_t key, GVariant *data,
+		const struct sr_dev_inst *sdi, const struct sr_channel_group *cg);
+	int (*config_list)(void *state, uint32_t key, GVariant **data,
+		const struct sr_dev_inst *sdi, const struct sr_channel_group *cg);
+	/** Hook at acquisition start. Can re-route the receive routine. */
+	int (*acquire_start)(void *state, const struct sr_dev_inst *sdi,
+		sr_receive_data_callback *cb, void **cb_data);
+};
+
 /*--- log.c -----------------------------------------------------------------*/
 
 #if defined(_WIN32) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
