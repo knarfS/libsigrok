@@ -41,6 +41,15 @@ void srtest_check_samplerate(struct sr_context *sr_ctx, const char *drivername,
 
 GArray *srtest_get_enabled_logic_channels(const struct sr_dev_inst *sdi);
 
+int srtest_analog_init(struct sr_datafeed_analog *analog,
+			struct sr_analog_encoding *encoding,
+			struct sr_analog_meaning *meaning,
+			struct sr_analog_spec *spec,
+			int digits);
+
+void srtest_assert_float_eq_tol(float value, float expected_value,
+				float tolerance, const char *desc);
+
 Suite *suite_core(void);
 Suite *suite_driver_all(void);
 Suite *suite_input_all(void);
@@ -54,5 +63,6 @@ Suite *suite_device(void);
 Suite *suite_trigger(void);
 Suite *suite_analog(void);
 Suite *suite_conv(void);
+Suite *suite_dmm_asycii(void);
 
 #endif

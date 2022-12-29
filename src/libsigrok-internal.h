@@ -1523,7 +1523,6 @@ struct sr_usb_dev_inst {
 };
 #endif
 
-struct sr_serial_dev_inst;
 #ifdef HAVE_SERIAL_COMM
 struct ser_lib_functions;
 struct ser_hid_chip_functions;

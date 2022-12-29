@@ -782,7 +782,8 @@ tests_main_SOURCES = \
 	tests/device.c \
 	tests/trigger.c \
 	tests/analog.c \
-	tests/conv.c
+	tests/conv.c \
+	tests/dmm_asycii.c
 
 tests_main_LDADD = libsigrok.la $(SR_EXTRA_LIBS) $(TESTS_LIBS)
 

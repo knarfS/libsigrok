@@ -46,7 +46,7 @@ static const uint32_t devopts[] = {
 
 static GSList *scan(struct sr_dev_driver *di, GSList *options)
 {
-	struct dmm_info *dmm;
+	struct sr_dev_dmm_driver *dmm;
 	struct sr_config *src;
 	GSList *l, *devices;
 	const char *conn, *serialcomm;
@@ -59,7 +59,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	size_t ch_idx;
 	char ch_name[12];
 
-	dmm = (struct dmm_info *)di;
+	dmm = (struct sr_dev_dmm_driver *)di;
 
 	conn = dmm->conn;
 	serialcomm = dmm->serialcomm;
@@ -190,7 +190,7 @@ static int config_get(uint32_t key, GVariant **data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
 	struct dev_context *devc;
-	struct dmm_info *dmm;
+	struct sr_dev_dmm_driver *dmm;
 
 	if (!sdi)
 		return SR_ERR_ARG;
@@ -202,7 +202,7 @@ static int config_get(uint32_t key, GVariant **data,
 	case SR_CONF_LIMIT_MSEC:
 		return sr_sw_limits_config_get(&devc->limits, key, data);
 	default:
-		dmm = (struct dmm_info *)sdi->driver;
+		dmm = (struct sr_dev_dmm_driver *)sdi->driver;
 		if (!dmm || !dmm->config_get)
 			return SR_ERR_NA;
 		return dmm->config_get(dmm->dmm_state, key, data, sdi, cg);
@@ -214,7 +214,7 @@ static int config_set(uint32_t key, GVariant *data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
 	struct dev_context *devc;
-	struct dmm_info *dmm;
+	struct sr_dev_dmm_driver *dmm;
 
 	if (!sdi)
 		return SR_ERR_ARG;
@@ -227,7 +227,7 @@ static int config_set(uint32_t key, GVariant *data,
 	case SR_CONF_LIMIT_MSEC:
 		return sr_sw_limits_config_set(&devc->limits, key, data);
 	default:
-		dmm = (struct dmm_info *)sdi->driver;
+		dmm = (struct sr_dev_dmm_driver *)sdi->driver;
 		if (!dmm || !dmm->config_set)
 			return SR_ERR_NA;
 		return dmm->config_set(dmm->dmm_state, key, data, sdi, cg);
@@ -237,7 +237,7 @@ static int config_set(uint32_t key, GVariant *data,
 static int config_list(uint32_t key, GVariant **data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
-	struct dmm_info *dmm;
+	struct sr_dev_dmm_driver *dmm;
 	int ret;
 
 	/* Use common logic for standard keys. */
@@ -248,7 +248,7 @@ static int config_list(uint32_t key, GVariant **data,
 	 * Check for device specific config_list handler. ERR N/A from
 	 * that handler is non-fatal, just falls back to common logic.
 	 */
-	dmm = (struct dmm_info *)sdi->driver;
+	dmm = (struct sr_dev_dmm_driver *)sdi->driver;
 	if (dmm && dmm->config_list) {
 		ret = dmm->config_list(dmm->dmm_state, key, data, sdi, cg);
 		if (ret != SR_ERR_NA)
@@ -261,7 +261,7 @@ static int config_list(uint32_t key, GVariant **data,
 static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 {
 	struct dev_context *devc;
-	struct dmm_info *dmm;
+	struct sr_dev_dmm_driver *dmm;
 	sr_receive_data_callback cb_func;
 	void *cb_data;
 	int ret;
@@ -274,7 +274,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 
 	cb_func = receive_data;
 	cb_data = (void *)sdi;
-	dmm = (struct dmm_info *)sdi->driver;
+	dmm = (struct sr_dev_dmm_driver *)sdi->driver;
 	if (dmm && dmm->acquire_start) {
 		ret = dmm->acquire_start(dmm->dmm_state, sdi,
 			&cb_func, &cb_data);
@@ -294,7 +294,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 		OPEN, REQUEST, VALID, PARSE, DETAILS, \
 		INIT_STATE, FREE_STATE, VALID_LEN, PARSE_LEN, \
 		CFG_GET, CFG_SET, CFG_LIST, ACQ_START) \
-	&((struct dmm_info) { \
+	&((struct sr_dev_dmm_driver) { \
 		{ \
 			.name = ID, \
 			.longname = VENDOR " " MODEL, \
