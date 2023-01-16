@@ -57,6 +57,7 @@ struct dev_context {
 	GMutex rw_mutex;
 	gboolean curr_ovp_state;
 	gboolean curr_ocp_state;
+	gboolean curr_range;
 	gboolean curr_cc_state;
 	gboolean curr_out_state;
 };
@@ -69,18 +70,20 @@ struct rdtech_dps_state {
 		STATE_REGULATION_CC = 1 << 2,
 		STATE_PROTECT_OVP = 1 << 3,
 		STATE_PROTECT_OCP = 1 << 4,
-		STATE_PROTECT_ENABLED = 1 << 5,
-		STATE_VOLTAGE_TARGET = 1 << 6,
-		STATE_CURRENT_LIMIT = 1 << 7,
-		STATE_OVP_THRESHOLD = 1 << 8,
-		STATE_OCP_THRESHOLD = 1 << 9,
-		STATE_VOLTAGE = 1 << 10,
-		STATE_CURRENT = 1 << 11,
-		STATE_POWER = 1 << 12,
+		STATE_RANGE = 1 << 5,
+		STATE_PROTECT_ENABLED = 1 << 6,
+		STATE_VOLTAGE_TARGET = 1 << 7,
+		STATE_CURRENT_LIMIT = 1 << 8,
+		STATE_OVP_THRESHOLD = 1 << 9,
+		STATE_OCP_THRESHOLD = 1 << 10,
+		STATE_VOLTAGE = 1 << 11,
+		STATE_CURRENT = 1 << 12,
+		STATE_POWER = 1 << 13,
 	} mask;
 	gboolean lock;
 	gboolean output_enabled, regulation_cc;
-	gboolean protect_ovp, protect_ocp, protect_enabled;
+	gboolean protect_ovp, protect_ocp, range;
+	gboolean protect_enabled;
 	float voltage_target, current_limit;
 	float ovp_threshold, ocp_threshold;
 	float voltage, current, power;
