@@ -54,16 +54,23 @@ static const uint32_t devopts[] = {
 
 /* Model ID, model name, max current/voltage/power, current/voltage digits. */
 static const struct rdtech_dps_model supported_models[] = {
-	{ MODEL_DPS, 3005, "DPS3005",  5, 30,  160, 3, 2 },
-	{ MODEL_DPS, 5005, "DPS5005",  5, 50,  250, 3, 2 },
-	{ MODEL_DPS, 5205, "DPH5005",  5, 50,  250, 3, 2 },
-	{ MODEL_DPS, 5015, "DPS5015", 15, 50,  750, 2, 2 },
-	{ MODEL_DPS, 5020, "DPS5020", 20, 50, 1000, 2, 2 },
-	{ MODEL_DPS, 8005, "DPS8005",  5, 80,  408, 3, 2 },
-	/* All RD specs taken from the 2020.12.2 instruction manual. */
-	{ MODEL_RD , 6006, "RD6006" ,  6, 60,  360, 3, 2 },
-	{ MODEL_RD , 6012, "RD6012" , 12, 60,  720, 2, 2 },
-	{ MODEL_RD , 6018, "RD6018" , 18, 60, 1080, 2, 2 },
+	{ MODEL_DPS,  3005, "DPS3005",  5, 30,  160, 3, 2 },
+	{ MODEL_DPS,  5005, "DPS5005",  5, 50,  250, 3, 2 },
+	{ MODEL_DPS,  5205, "DPH5005",  5, 50,  250, 3, 2 },
+	{ MODEL_DPS,  5015, "DPS5015", 15, 50,  750, 2, 2 },
+	{ MODEL_DPS,  5020, "DPS5020", 20, 50, 1000, 2, 2 },
+	{ MODEL_DPS,  8005, "DPS8005",  5, 80,  408, 3, 2 },
+	/* RD specs for models RD60nn taken from the 2020.12.2
+	   instruction manual, specs for RD6006P from the 2021.2.26
+	   (english) manual, and specs for RD6012P from the 2021.10.26
+	   (english) manual */
+	{ MODEL_RD , 60061, "RD6006" ,  6, 60,  360, 3, 2 },
+	{ MODEL_RD , 60065, "RD6006P",  6, 60,  360, 4, 3 },
+	{ MODEL_RD , 60121, "RD6012" , 12, 60,  720, 2, 2 },
+	/* current digits for RD6012P is 4 for the 6A range (RTU reg
+	   20 = 0) and 3 for the 12A range (RTU reg 20 = 1) */
+	{ MODEL_RD , 60125, "RD6012P", 12, 60,  720, 4, 3 },
+	{ MODEL_RD , 60181, "RD6018" , 18, 60, 1080, 2, 2 },
 };
 
 static struct sr_dev_driver rdtech_dps_driver_info;
