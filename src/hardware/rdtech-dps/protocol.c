@@ -85,6 +85,8 @@ enum rdtech_rd_register {
 	REG_RD_PROTECT = 16, /* u16 */
 	REG_RD_REGULATION = 17, /* u16 */
 	REG_RD_ENABLE = 18, /* u16 */
+	REG_RD_PRESET = 19, /* u16 */
+	REG_RD_RANGE = 20, /* u16 */
 	/*
 	 * Battery at 32 == 0x20 pp:
 	 * Mode, voltage, temperature, capacity, energy.
@@ -200,7 +202,7 @@ SR_PRIV int rdtech_dps_get_model_version(struct sr_modbus_dev_inst *modbus,
 		if (ret != SR_OK)
 			return ret;
 		rdptr = (void *)registers;
-		*model = read_u16be_inc(&rdptr) / 10;
+		*model = read_u16be_inc(&rdptr);
 		*serno = read_u32be_inc(&rdptr);
 		*version = read_u16be_inc(&rdptr);
 		sr_info("RDTech RD model: %u version: %u, serno %u",
@@ -243,6 +245,15 @@ static int send_value(const struct sr_dev_inst *sdi,
 	return ret;
 }
 
+/* The current multiplier for RD6012P is dependent on current range */
+static double current_multiplier (struct dev_context *devc)
+{
+  if (devc->model->id == 60125 && devc->curr_range)
+    return 1000.; /* 3 digits */
+  else
+    return devc->current_multiplier;
+}
+
 /*
  * Get the device's current state. Exhaustively, relentlessly.
  * Concentrate all details of communication in the physical transport,
@@ -265,7 +276,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	uint16_t uset_raw, iset_raw, uout_raw, iout_raw, power_raw;
 	uint16_t reg_val, reg_state, out_state, ovpset_raw, ocpset_raw;
 	gboolean is_lock, is_out_enabled, is_reg_cc;
-	gboolean uses_ovp, uses_ocp;
+	gboolean uses_ovp, uses_ocp, uses_12V_range;
 	float volt_target, curr_limit;
 	float ovp_threshold, ocp_threshold;
 	float curr_voltage, curr_current, curr_power;
@@ -330,11 +341,11 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		uset_raw = read_u16be_inc(&rdptr);
 		volt_target = uset_raw / devc->voltage_multiplier;
 		iset_raw = read_u16be_inc(&rdptr);
-		curr_limit = iset_raw / devc->current_multiplier;
+		curr_limit = iset_raw / current_multiplier(devc);
 		uout_raw = read_u16be_inc(&rdptr);
 		curr_voltage = uout_raw / devc->voltage_multiplier;
 		iout_raw = read_u16be_inc(&rdptr);
-		curr_current = iout_raw / devc->current_multiplier;
+		curr_current = iout_raw / current_multiplier(devc);
 		power_raw = read_u16be_inc(&rdptr);
 		curr_power = power_raw / 100.0f;
 		(void)read_u16be_inc(&rdptr); /* UIN */
@@ -361,7 +372,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		ovpset_raw = read_u16be_inc(&rdptr); /* PRE OVPSET */
 		ovp_threshold = ovpset_raw * devc->voltage_multiplier;
 		ocpset_raw = read_u16be_inc(&rdptr); /* PRE OCPSET */
-		ocp_threshold = ocpset_raw * devc->current_multiplier;
+		ocp_threshold = ocpset_raw * current_multiplier(devc);
 
 		break;
 
@@ -369,7 +380,9 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		/* Retrieve a set of adjacent registers. */
 		g_mutex_lock(&devc->rw_mutex);
 		ret = rdtech_dps_read_holding_registers(modbus,
-			REG_RD_VOLT_TGT, 11, registers);
+			REG_RD_VOLT_TGT,
+			devc->model->id == 60125 ? 13 : 11,
+			registers);
 		g_mutex_unlock(&devc->rw_mutex);
 		if (ret != SR_OK)
 			return ret;
@@ -379,11 +392,11 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		uset_raw = read_u16be_inc(&rdptr); /* USET */
 		volt_target = uset_raw / devc->voltage_multiplier;
 		iset_raw = read_u16be_inc(&rdptr); /* ISET */
-		curr_limit = iset_raw / devc->current_multiplier;
+		curr_limit = iset_raw / current_multiplier(devc);
 		uout_raw = read_u16be_inc(&rdptr); /* UOUT */
 		curr_voltage = uout_raw / devc->voltage_multiplier;
 		iout_raw = read_u16be_inc(&rdptr); /* IOUT */
-		curr_current = iout_raw / devc->current_multiplier;
+		curr_current = iout_raw / current_multiplier(devc);
 		(void)read_u16be_inc(&rdptr); /* ENERGY */
 		power_raw = read_u16be_inc(&rdptr); /* POWER */
 		curr_power = power_raw / 100.0f;
@@ -396,6 +409,10 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		is_reg_cc = reg_state == MODE_CC;
 		out_state = read_u16be_inc(&rdptr); /* ENABLE */
 		is_out_enabled = out_state != 0;
+		if (devc->model->id == 60125) {
+			rdptr += sizeof (uint16_t); /* PRESET */
+			uses_12V_range = read_u16be_inc(&rdptr); /* RANGE */
+		}
 
 		/* Retrieve a set of adjacent registers. */
 		g_mutex_lock(&devc->rw_mutex);
@@ -410,7 +427,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		ovpset_raw = read_u16be_inc(&rdptr); /* OVP THR */
 		ovp_threshold = ovpset_raw / devc->voltage_multiplier;
 		ocpset_raw = read_u16be_inc(&rdptr); /* OCP THR */
-		ocp_threshold = ocpset_raw / devc->current_multiplier;
+		ocp_threshold = ocpset_raw / current_multiplier(devc);
 
 		/* Details which we cannot query from the device. */
 		is_lock = FALSE;
@@ -440,6 +457,10 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	state->mask |= STATE_PROTECT_OVP;
 	state->protect_ocp = uses_ocp;
 	state->mask |= STATE_PROTECT_OCP;
+ 	if (devc->model->id == 60125) {
+		state->range = uses_12V_range;
+		state->mask |= STATE_RANGE;
+	}
 	state->protect_enabled = TRUE;
 	state->mask |= STATE_PROTECT_ENABLED;
 	state->voltage_target = volt_target;
@@ -510,7 +531,7 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 		}
 	}
 	if (state->mask & STATE_CURRENT_LIMIT) {
-		reg_value = state->current_limit * devc->current_multiplier;
+		reg_value = state->current_limit * current_multiplier(devc);
 		switch (devc->model->model_type) {
 		case MODEL_DPS:
 			ret = rdtech_dps_set_reg(sdi, REG_DPS_ISET, reg_value);
@@ -544,7 +565,7 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 		}
 	}
 	if (state->mask & STATE_OCP_THRESHOLD) {
-		reg_value = state->ocp_threshold * devc->current_multiplier;
+		reg_value = state->ocp_threshold * current_multiplier(devc);
 		switch (devc->model->model_type) {
 		case MODEL_DPS:
 			ret = rdtech_dps_set_reg(sdi, PRE_DPS_OCPSET, reg_value);
@@ -598,6 +619,8 @@ SR_PRIV int rdtech_dps_seed_receive(const struct sr_dev_inst *sdi)
 		devc->curr_ovp_state = state.protect_ovp;
 	if (state.mask & STATE_PROTECT_OCP)
 		devc->curr_ocp_state = state.protect_ocp;
+	if (state.mask & STATE_RANGE)
+		devc->curr_range = state.range;
 	if (state.mask & STATE_REGULATION_CC)
 		devc->curr_cc_state = state.regulation_cc;
 	if (state.mask & STATE_OUTPUT_ENABLED)
