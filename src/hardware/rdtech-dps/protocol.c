@@ -114,7 +114,7 @@ static int rdtech_dps_read_holding_registers(struct sr_modbus_dev_inst *modbus,
 	int address, int nb_registers, uint16_t *registers)
 {
 	size_t retries;
-	int ret;
+	int ret = SR_ERR; /* make the compiler happy */
 
 	retries = 3;
 	while (retries--) {
@@ -283,7 +283,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	uint16_t uset_raw, iset_raw, uout_raw, iout_raw, power_raw;
 	uint16_t reg_val, reg_state, out_state, ovpset_raw, ocpset_raw;
 	gboolean is_lock, is_out_enabled, is_reg_cc;
-	gboolean uses_ovp, uses_ocp, uses_12V_range;
+	gboolean uses_ovp, uses_ocp, uses_12V_range = FALSE;
 	float volt_target, curr_limit;
 	float ovp_threshold, ocp_threshold;
 	float curr_voltage, curr_current, curr_power;
