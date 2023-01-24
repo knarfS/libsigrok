@@ -275,7 +275,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	struct dev_context *devc;
 	struct sr_modbus_dev_inst *modbus;
 	gboolean get_config, get_init_state, get_curr_meas;
-	uint16_t registers[12];
+	uint16_t registers[14];
 	int ret;
 	const uint8_t *rdptr;
 	uint16_t uset_raw, iset_raw, uout_raw, iout_raw, power_raw;
