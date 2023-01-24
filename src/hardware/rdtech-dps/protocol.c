@@ -25,6 +25,8 @@
 
 #include "protocol.h"
 
+#define IS_MODEL_6012P(MODEL) ((MODEL)->id == 60125)
+
 /* These are the Modbus RTU registers for the family of rdtech-dps devices.
  *
  * Some registers are specific to a certain device. For example,
@@ -253,7 +255,7 @@ static int send_value(const struct sr_dev_inst *sdi,
 /* The current multiplier for RD6012P is dependent on current range */
 static double current_multiplier (struct dev_context *devc)
 {
-  if (devc->model->id == 60125 && devc->curr_range)
+  if (IS_MODEL_6012P(devc->model) && devc->curr_range)
     return 1000.; /* 3 digits */
   else
     return devc->current_multiplier;
@@ -386,7 +388,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		g_mutex_lock(&devc->rw_mutex);
 		ret = rdtech_dps_read_holding_registers(modbus,
 			REG_RD_VOLT_TGT,
-			devc->model->id == 60125 ? 13 : 11,
+			IS_MODEL_6012P(devc->model) ? 13 : 11,
 			registers);
 		g_mutex_unlock(&devc->rw_mutex);
 		if (ret != SR_OK)
@@ -414,7 +416,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		is_reg_cc = reg_state == MODE_CC;
 		out_state = read_u16be_inc(&rdptr); /* ENABLE */
 		is_out_enabled = out_state != 0;
-		if (devc->model->id == 60125) {
+		if (IS_MODEL_6012P(devc->model)) {
 			rdptr += sizeof (uint16_t); /* PRESET */
 			uses_12V_range = read_u16be_inc(&rdptr); /* RANGE */
 		}
@@ -462,7 +464,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	state->mask |= STATE_PROTECT_OVP;
 	state->protect_ocp = uses_ocp;
 	state->mask |= STATE_PROTECT_OCP;
- 	if (devc->model->id == 60125) {
+ 	if (IS_MODEL_6012P(devc->model)) {
 		state->range = uses_12V_range;
 		state->mask |= STATE_RANGE;
 	}
