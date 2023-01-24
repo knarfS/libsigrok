@@ -25,6 +25,11 @@
 
 #include "protocol.h"
 
+/* These are the Modbus RTU registers for the family of rdtech-dps devices.
+ *
+ * Some registers are specific to a certain device. For example,
+ * REG_RD_RANGE is specific to RD6012P.
+ */
 enum rdtech_dps_register {
 	REG_DPS_USET       = 0x00, /* Mirror of 0x50 */
 	REG_DPS_ISET       = 0x01, /* Mirror of 0x51 */
