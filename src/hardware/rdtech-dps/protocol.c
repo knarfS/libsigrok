@@ -114,15 +114,15 @@ static int rdtech_dps_read_holding_registers(struct sr_modbus_dev_inst *modbus,
 	int address, int nb_registers, uint16_t *registers)
 {
 	size_t retries;
-	int ret = SR_ERR; /* make the compiler happy */
+	int ret;
 
 	retries = 3;
-	while (retries--) {
+	do {
 		ret = sr_modbus_read_holding_registers(modbus,
 			address, nb_registers, registers);
 		if (ret == SR_OK)
 			return ret;
-	}
+	} while (--retries);
 
 	return ret;
 }
@@ -283,7 +283,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	uint16_t uset_raw, iset_raw, uout_raw, iout_raw, power_raw;
 	uint16_t reg_val, reg_state, out_state, ovpset_raw, ocpset_raw;
 	gboolean is_lock, is_out_enabled, is_reg_cc;
-	gboolean uses_ovp, uses_ocp, uses_12V_range = FALSE;
+	gboolean uses_ovp, uses_ocp, uses_12V_range;
 	float volt_target, curr_limit;
 	float ovp_threshold, ocp_threshold;
 	float curr_voltage, curr_current, curr_power;
@@ -325,6 +325,13 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	(void)get_config;
 	(void)get_init_state;
 	(void)get_curr_meas;
+
+	/*
+	 * The model RD6012P has two voltage/current ranges. We set a
+	 * default value here such that the compiler doesn't generate
+	 * an uninitialized variable warning.
+	 */
+	uses_12V_range = FALSE;
 
 	switch (devc->model->model_type) {
 	case MODEL_DPS:
