@@ -620,6 +620,32 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 			return SR_ERR_ARG;
 		}
 	}
+	if (state->mask & STATE_RANGE) {
+		reg_value = state->range;
+		switch (devc->model->model_type) {
+		case MODEL_DPS:
+			if (reg_value > 0)
+				return SR_ERR_ARG;
+			break;
+		case MODEL_RD:
+			if (devc->model->n_ranges == 1)
+				/* No need to set. */
+				return SR_OK;
+			ret = rdtech_rd_set_reg(sdi, REG_RD_RANGE, reg_value);
+			if (ret != SR_OK)
+				return ret;
+			if (!devc->acquisition_started) {
+				devc->curr_range = reg_value ? 1 : 0;
+				rdtech_dps_update_multipliers(sdi);
+			}
+			/* We rely on the data acquisition to update
+			 * devc->curr_range. If we do it here, there
+			 * will be no range meta package. */
+			break;
+		default:
+			return SR_ERR_ARG;
+		}
+	}
 	if (state->mask & STATE_LOCK) {
 		switch (devc->model->model_type) {
 		case MODEL_DPS:
@@ -659,8 +685,10 @@ SR_PRIV int rdtech_dps_seed_receive(const struct sr_dev_inst *sdi)
 		devc->curr_ovp_state = state.protect_ovp;
 	if (state.mask & STATE_PROTECT_OCP)
 		devc->curr_ocp_state = state.protect_ocp;
-	if (state.mask & STATE_RANGE)
+	if (state.mask & STATE_RANGE) {
 		devc->curr_range = state.range;
+		rdtech_dps_update_multipliers(sdi);
+	}
 	if (state.mask & STATE_REGULATION_CC)
 		devc->curr_cc_state = state.regulation_cc;
 	if (state.mask & STATE_OUTPUT_ENABLED)
@@ -720,6 +748,13 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 			SR_CONF_OVER_CURRENT_PROTECTION_ACTIVE,
 			g_variant_new_boolean(state.protect_ocp));
 		devc->curr_ocp_state = state.protect_ocp;
+	}
+	if (devc->curr_range != state.range) {
+		(void)sr_session_send_meta(sdi,
+			SR_CONF_RANGE,
+			g_variant_new_uint32(state.range));
+		devc->curr_range = state.range;
+		rdtech_dps_update_multipliers(sdi);
 	}
 	if (devc->curr_cc_state != state.regulation_cc) {
 		regulation_text = state.regulation_cc ? "CC" : "CV";

@@ -49,6 +49,7 @@ static const uint32_t devopts[] = {
 	SR_CONF_OVER_VOLTAGE_PROTECTION_THRESHOLD | SR_CONF_GET | SR_CONF_SET,
 	SR_CONF_OVER_CURRENT_PROTECTION_ACTIVE | SR_CONF_GET,
 	SR_CONF_OVER_CURRENT_PROTECTION_THRESHOLD | SR_CONF_GET | SR_CONF_SET,
+	SR_CONF_RANGE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 };
 
 /* range name, max current/voltage/power, current/voltage digits */
@@ -430,6 +431,14 @@ static int config_get(uint32_t key, GVariant **data,
 			return SR_ERR_DATA;
 		*data = g_variant_new_double(state.ocp_threshold);
 		break;
+	case SR_CONF_RANGE:
+		ret = rdtech_dps_get_state(sdi, &state, ST_CTX_CONFIG);
+		if (ret != SR_OK)
+			return ret;
+		if (!(state.mask & STATE_RANGE))
+			return SR_ERR_DATA;
+		*data = g_variant_new_string(devc->model->ranges[state.range].range_str);
+		break;
 	default:
 		return SR_ERR_NA;
 	}
@@ -442,6 +451,8 @@ static int config_set(uint32_t key, GVariant *data,
 {
 	struct dev_context *devc;
 	struct rdtech_dps_state state;
+	const char *range_str;
+	unsigned int i;
 
 	(void)cg;
 
@@ -472,6 +483,19 @@ static int config_set(uint32_t key, GVariant *data,
 		state.ocp_threshold = g_variant_get_double(data);
 		state.mask |= STATE_OCP_THRESHOLD;
 		return rdtech_dps_set_state(sdi, &state);
+	case SR_CONF_RANGE:
+		range_str = g_variant_get_string(data, NULL);
+		for (i = 0; i < devc->model->n_ranges; ++i) {
+			if (g_strcmp0(devc->model->ranges[i].range_str,
+				      range_str)
+			    == 0)
+			{
+				state.range = i;
+				state.mask |= STATE_RANGE;
+				return rdtech_dps_set_state(sdi, &state);
+			}
+		}
+		return SR_ERR_NA;
 	default:
 		return SR_ERR_NA;
 	}
@@ -483,6 +507,9 @@ static int config_list(uint32_t key, GVariant **data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
 	struct dev_context *devc;
+	GVariantBuilder gvb;
+	unsigned int i;
+	struct rdtech_dps_range *range;
 
 	devc = (sdi) ? sdi->priv : NULL;
 
@@ -491,12 +518,23 @@ static int config_list(uint32_t key, GVariant **data,
 	case SR_CONF_DEVICE_OPTIONS:
 		return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts, devopts);
 	case SR_CONF_VOLTAGE_TARGET:
-		*data = std_gvar_min_max_step(0.0, devc->model->max_voltage,
+		rdtech_dps_update_range(sdi);
+		range = &devc->model->ranges[devc->curr_range];
+		*data = std_gvar_min_max_step(0.0, range->max_voltage,
 			1 / devc->voltage_multiplier);
 		break;
 	case SR_CONF_CURRENT_LIMIT:
-		*data = std_gvar_min_max_step(0.0, devc->model->max_current,
+		rdtech_dps_update_range(sdi);
+		range = &devc->model->ranges[devc->curr_range];
+		*data = std_gvar_min_max_step(0.0, range->max_current,
 			1 / devc->current_multiplier);
+		break;
+	case SR_CONF_RANGE:
+		g_variant_builder_init(&gvb, G_VARIANT_TYPE_ARRAY);
+		for (i = 0; i < devc->model->n_ranges; ++i)
+			g_variant_builder_add(&gvb, "s",
+					      devc->model->ranges[i].range_str);
+		*data = g_variant_builder_end(&gvb);
 		break;
 	default:
 		return SR_ERR_NA;
