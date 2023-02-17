@@ -38,15 +38,21 @@ enum rdtech_dps_model_type {
 	MODEL_RD,
 };
 
-struct rdtech_dps_model {
-	enum rdtech_dps_model_type model_type;
-	unsigned int id;
-	const char *name;
+struct rdtech_dps_range {
+	const char *range_str;
 	unsigned int max_current;
 	unsigned int max_voltage;
 	unsigned int max_power;
 	unsigned int current_digits;
 	unsigned int voltage_digits;
+};
+
+struct rdtech_dps_model {
+	enum rdtech_dps_model_type model_type;
+	unsigned int id;
+	const char *name;
+	struct rdtech_dps_range *ranges;
+	unsigned int n_ranges;
 };
 
 struct dev_context {

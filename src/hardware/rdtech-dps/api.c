@@ -52,25 +52,74 @@ static const uint32_t devopts[] = {
 	SR_CONF_OVER_CURRENT_PROTECTION_THRESHOLD | SR_CONF_GET | SR_CONF_SET,
 };
 
-/* Model ID, model name, max current/voltage/power, current/voltage digits. */
+/* range name, max current/voltage/power, current/voltage digits */
+static struct rdtech_dps_range ranges_dps3005[] = {
+	{  "5A",  5, 30,  160, 3, 2 }
+};
+
+static struct rdtech_dps_range ranges_dps5005[] = {
+	{  "5A",  5, 50,  250, 3, 2 }
+};
+
+static struct rdtech_dps_range ranges_dps5015[] = {
+	{ "15A", 15, 50,  750, 2, 2 }
+};
+
+static struct rdtech_dps_range ranges_dps5020[] = {
+	{ "20A", 20, 50, 1000, 2, 2 }
+};
+
+static struct rdtech_dps_range ranges_dps8005[] = {
+	{  "5A",  5, 80,  408, 3, 2 }
+};
+
+static struct rdtech_dps_range ranges_rd6006[] = {
+	{  "6A",  6, 60,  360, 3, 2 }
+};
+
+static struct rdtech_dps_range ranges_rd6006p[] = {
+	{  "6A",  6, 60,  360, 4, 3 }
+};
+
+static struct rdtech_dps_range ranges_rd6012[] = {
+	{ "12A", 12, 60,  720, 2, 2 }
+};
+
+/* current digits for RD6012P is 4 for the 6A range (RTU reg
+   20 = 0) and 3 for the 12A range (RTU reg 20 = 1) */
+static struct rdtech_dps_range ranges_rd6012p[] = {
+	{  "6A",  6, 60,  360, 4, 3 },
+	{ "12A", 12, 60,  720, 3, 3 }
+};
+
+static struct rdtech_dps_range ranges_rd6018[] = {
+	{ "18A", 18, 60, 1080, 2, 2 }
+};
+
+static struct rdtech_dps_range ranges_rd6024[] = {
+	{ "24A", 24, 60, 1440, 2, 2 }
+};
+
+/* model ID, model name, range */
 static const struct rdtech_dps_model supported_models[] = {
-	{ MODEL_DPS,  3005, "DPS3005",  5, 30,  160, 3, 2 },
-	{ MODEL_DPS,  5005, "DPS5005",  5, 50,  250, 3, 2 },
-	{ MODEL_DPS,  5205, "DPH5005",  5, 50,  250, 3, 2 },
-	{ MODEL_DPS,  5015, "DPS5015", 15, 50,  750, 2, 2 },
-	{ MODEL_DPS,  5020, "DPS5020", 20, 50, 1000, 2, 2 },
-	{ MODEL_DPS,  8005, "DPS8005",  5, 80,  408, 3, 2 },
+	{ MODEL_DPS,  3005, "DPS3005", ARRAY_AND_SIZE (ranges_dps3005) },
+	{ MODEL_DPS,  5005, "DPS5005", ARRAY_AND_SIZE (ranges_dps5005) },
+	{ MODEL_DPS,  5205, "DPH5005", ARRAY_AND_SIZE (ranges_dps5005) },
+	{ MODEL_DPS,  5015, "DPS5015", ARRAY_AND_SIZE (ranges_dps5015) },
+	{ MODEL_DPS,  5020, "DPS5020", ARRAY_AND_SIZE (ranges_dps5020) },
+	{ MODEL_DPS,  8005, "DPS8005", ARRAY_AND_SIZE (ranges_dps8005) },
 	/* RD specs for models RD60nn taken from the 2020.12.2
 	   instruction manual, specs for RD6006P from the 2021.2.26
-	   (english) manual, and specs for RD6012P from the 2021.10.26
-	   (english) manual */
-	{ MODEL_RD , 60061, "RD6006" ,  6, 60,  360, 3, 2 },
-	{ MODEL_RD , 60065, "RD6006P",  6, 60,  360, 4, 3 },
-	{ MODEL_RD , 60121, "RD6012" , 12, 60,  720, 2, 2 },
-	/* current digits for RD6012P is 4 for the 6A range (RTU reg
-	   20 = 0) and 3 for the 12A range (RTU reg 20 = 1) */
-	{ MODEL_RD , 60125, "RD6012P", 12, 60,  720, 4, 3 },
-	{ MODEL_RD , 60181, "RD6018" , 18, 60, 1080, 2, 2 },
+	   (english) manual, specs for RD6012P from the 2021.10.26
+	   (english) manual, and, specs for RD6024P from the 2021.1.7
+	   (english) manual. */
+	{ MODEL_RD , 60061, "RD6006" , ARRAY_AND_SIZE (ranges_rd6006)  },
+	{ MODEL_RD , 60062, "RD6006" , ARRAY_AND_SIZE (ranges_rd6006)  },
+	{ MODEL_RD , 60065, "RD6006P", ARRAY_AND_SIZE (ranges_rd6006p) },
+	{ MODEL_RD , 60121, "RD6012" , ARRAY_AND_SIZE (ranges_rd6012)  },
+	{ MODEL_RD , 60125, "RD6012P", ARRAY_AND_SIZE (ranges_rd6012p) },
+	{ MODEL_RD , 60181, "RD6018" , ARRAY_AND_SIZE (ranges_rd6018)  },
+	{ MODEL_RD , 60241, "RD6024" , ARRAY_AND_SIZE (ranges_rd6024)  },
 };
 
 static struct sr_dev_driver rdtech_dps_driver_info;
