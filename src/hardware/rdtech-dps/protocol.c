@@ -713,6 +713,7 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 	int ret;
 	struct sr_channel *ch;
 	const char *regulation_text;
+	int r;
 
 	(void)fd;
 	(void)revents;
@@ -757,9 +758,10 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 		devc->curr_ocp_state = state.protect_ocp;
 	}
 	if (devc->curr_range != state.range) {
+		r = state.range;
 		(void)sr_session_send_meta(sdi,
 			SR_CONF_RANGE,
-			g_variant_new_uint32(state.range));
+			g_variant_new_string(devc->model->ranges[r].range_str));
 		devc->curr_range = state.range;
 		rdtech_dps_update_multipliers(sdi);
 	}
