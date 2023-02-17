@@ -63,9 +63,10 @@ struct dev_context {
 	GMutex rw_mutex;
 	gboolean curr_ovp_state;
 	gboolean curr_ocp_state;
-	gboolean curr_range;
+	unsigned int curr_range;
 	gboolean curr_cc_state;
 	gboolean curr_out_state;
+	gboolean acquisition_started;
 };
 
 /* Container to get and set parameter values. */
@@ -88,7 +89,8 @@ struct rdtech_dps_state {
 	} mask;
 	gboolean lock;
 	gboolean output_enabled, regulation_cc;
-	gboolean protect_ovp, protect_ocp, range;
+	gboolean protect_ovp, protect_ocp;
+	unsigned int range;
 	gboolean protect_enabled;
 	float voltage_target, current_limit;
 	float ovp_threshold, ocp_threshold;
@@ -109,6 +111,8 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 SR_PRIV int rdtech_dps_get_model_version(struct sr_modbus_dev_inst *modbus,
 	enum rdtech_dps_model_type model_type,
 	uint16_t *model, uint16_t *version, uint32_t *serno);
+SR_PRIV void rdtech_dps_update_multipliers(const struct sr_dev_inst *sdi);
+SR_PRIV int rdtech_dps_update_range(const struct sr_dev_inst *sdi);
 SR_PRIV int rdtech_dps_seed_receive(const struct sr_dev_inst *sdi);
 SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data);
 

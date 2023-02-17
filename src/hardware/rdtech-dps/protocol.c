@@ -21,11 +21,10 @@
 
 #include <config.h>
 
+#include <math.h>
 #include <string.h>
 
 #include "protocol.h"
-
-#define IS_MODEL_6012P(MODEL) ((MODEL)->id == 60125)
 
 /* These are the Modbus RTU registers for the family of rdtech-dps devices.
  *
@@ -222,6 +221,40 @@ SR_PRIV int rdtech_dps_get_model_version(struct sr_modbus_dev_inst *modbus,
 	/* UNREACH */
 }
 
+SR_PRIV void rdtech_dps_update_multipliers(const struct sr_dev_inst *sdi)
+{
+	struct dev_context *devc;
+	struct rdtech_dps_range *range;
+
+	devc = sdi->priv;
+	range = &devc->model->ranges[devc->curr_range];
+	devc->current_multiplier = pow(10.0, range->current_digits);
+	devc->voltage_multiplier = pow(10.0, range->voltage_digits);
+}
+
+/* Determine range of connected device. Don't do anything once
+ * acquisition has started (since the range will then be tracked). */
+SR_PRIV int rdtech_dps_update_range(const struct sr_dev_inst *sdi)
+{
+	struct dev_context *devc;
+	uint16_t range;
+	int ret;
+
+	devc = sdi->priv;
+	/* Only update range if there are multiple ranges and data
+	 * acquisition hasn't started. */
+	if (devc->model->n_ranges == 1 || devc->acquisition_started)
+		return SR_OK;
+	if (devc->model->model_type != MODEL_RD)
+		return SR_ERR;
+	ret = rdtech_dps_read_holding_registers(sdi->conn, REG_RD_RANGE, 1, &range);
+	if (ret != SR_OK)
+		return ret;
+	devc->curr_range = range ? 1 : 0;
+	rdtech_dps_update_multipliers(sdi);
+	return SR_OK;
+}
+
 /* Send a measured value to the session feed. */
 static int send_value(const struct sr_dev_inst *sdi,
 	struct sr_channel *ch, float value,
@@ -252,15 +285,6 @@ static int send_value(const struct sr_dev_inst *sdi,
 	return ret;
 }
 
-/* The current multiplier for RD6012P is dependent on current range */
-static double current_multiplier (struct dev_context *devc)
-{
-  if (IS_MODEL_6012P(devc->model) && devc->curr_range)
-    return 1000.; /* 3 digits */
-  else
-    return devc->current_multiplier;
-}
-
 /*
  * Get the device's current state. Exhaustively, relentlessly.
  * Concentrate all details of communication in the physical transport,
@@ -283,7 +307,8 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	uint16_t uset_raw, iset_raw, uout_raw, iout_raw, power_raw;
 	uint16_t reg_val, reg_state, out_state, ovpset_raw, ocpset_raw;
 	gboolean is_lock, is_out_enabled, is_reg_cc;
-	gboolean uses_ovp, uses_ocp, uses_12V_range;
+	gboolean uses_ovp, uses_ocp;
+	uint16_t range;
 	float volt_target, curr_limit;
 	float ovp_threshold, ocp_threshold;
 	float curr_voltage, curr_current, curr_power;
@@ -331,7 +356,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	 * default value here such that the compiler doesn't generate
 	 * an uninitialized variable warning.
 	 */
-	uses_12V_range = FALSE;
+	range = 0;
 
 	switch (devc->model->model_type) {
 	case MODEL_DPS:
@@ -355,11 +380,11 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		uset_raw = read_u16be_inc(&rdptr);
 		volt_target = uset_raw / devc->voltage_multiplier;
 		iset_raw = read_u16be_inc(&rdptr);
-		curr_limit = iset_raw / current_multiplier(devc);
+		curr_limit = iset_raw / devc->current_multiplier;
 		uout_raw = read_u16be_inc(&rdptr);
 		curr_voltage = uout_raw / devc->voltage_multiplier;
 		iout_raw = read_u16be_inc(&rdptr);
-		curr_current = iout_raw / current_multiplier(devc);
+		curr_current = iout_raw / devc->current_multiplier;
 		power_raw = read_u16be_inc(&rdptr);
 		curr_power = power_raw / 100.0f;
 		(void)read_u16be_inc(&rdptr); /* UIN */
@@ -386,7 +411,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		ovpset_raw = read_u16be_inc(&rdptr); /* PRE OVPSET */
 		ovp_threshold = ovpset_raw * devc->voltage_multiplier;
 		ocpset_raw = read_u16be_inc(&rdptr); /* PRE OCPSET */
-		ocp_threshold = ocpset_raw * current_multiplier(devc);
+		ocp_threshold = ocpset_raw * devc->current_multiplier;
 
 		break;
 
@@ -395,7 +420,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		g_mutex_lock(&devc->rw_mutex);
 		ret = rdtech_dps_read_holding_registers(modbus,
 			REG_RD_VOLT_TGT,
-			IS_MODEL_6012P(devc->model) ? 13 : 11,
+			devc->model->n_ranges > 1 ? 13 : 11,
 			registers);
 		g_mutex_unlock(&devc->rw_mutex);
 		if (ret != SR_OK)
@@ -406,11 +431,11 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		uset_raw = read_u16be_inc(&rdptr); /* USET */
 		volt_target = uset_raw / devc->voltage_multiplier;
 		iset_raw = read_u16be_inc(&rdptr); /* ISET */
-		curr_limit = iset_raw / current_multiplier(devc);
+		curr_limit = iset_raw / devc->current_multiplier;
 		uout_raw = read_u16be_inc(&rdptr); /* UOUT */
 		curr_voltage = uout_raw / devc->voltage_multiplier;
 		iout_raw = read_u16be_inc(&rdptr); /* IOUT */
-		curr_current = iout_raw / current_multiplier(devc);
+		curr_current = iout_raw / devc->current_multiplier;
 		(void)read_u16be_inc(&rdptr); /* ENERGY */
 		power_raw = read_u16be_inc(&rdptr); /* POWER */
 		curr_power = power_raw / 100.0f;
@@ -423,9 +448,9 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		is_reg_cc = reg_state == MODE_CC;
 		out_state = read_u16be_inc(&rdptr); /* ENABLE */
 		is_out_enabled = out_state != 0;
-		if (IS_MODEL_6012P(devc->model)) {
+		if (devc->model->n_ranges > 1) {
 			rdptr += sizeof (uint16_t); /* PRESET */
-			uses_12V_range = read_u16be_inc(&rdptr); /* RANGE */
+			range = read_u16be_inc(&rdptr) ? 1 : 0; /* RANGE */
 		}
 
 		/* Retrieve a set of adjacent registers. */
@@ -441,7 +466,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		ovpset_raw = read_u16be_inc(&rdptr); /* OVP THR */
 		ovp_threshold = ovpset_raw / devc->voltage_multiplier;
 		ocpset_raw = read_u16be_inc(&rdptr); /* OCP THR */
-		ocp_threshold = ocpset_raw / current_multiplier(devc);
+		ocp_threshold = ocpset_raw / devc->current_multiplier;
 
 		/* Details which we cannot query from the device. */
 		is_lock = FALSE;
@@ -471,8 +496,8 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	state->mask |= STATE_PROTECT_OVP;
 	state->protect_ocp = uses_ocp;
 	state->mask |= STATE_PROTECT_OCP;
- 	if (IS_MODEL_6012P(devc->model)) {
-		state->range = uses_12V_range;
+ 	if (devc->model->n_ranges > 1) {
+		state->range = range;
 		state->mask |= STATE_RANGE;
 	}
 	state->protect_enabled = TRUE;
@@ -545,7 +570,7 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 		}
 	}
 	if (state->mask & STATE_CURRENT_LIMIT) {
-		reg_value = state->current_limit * current_multiplier(devc);
+		reg_value = state->current_limit * devc->current_multiplier;
 		switch (devc->model->model_type) {
 		case MODEL_DPS:
 			ret = rdtech_dps_set_reg(sdi, REG_DPS_ISET, reg_value);
@@ -579,7 +604,7 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 		}
 	}
 	if (state->mask & STATE_OCP_THRESHOLD) {
-		reg_value = state->ocp_threshold * current_multiplier(devc);
+		reg_value = state->ocp_threshold * devc->current_multiplier;
 		switch (devc->model->model_type) {
 		case MODEL_DPS:
 			ret = rdtech_dps_set_reg(sdi, PRE_DPS_OCPSET, reg_value);
@@ -624,6 +649,7 @@ SR_PRIV int rdtech_dps_seed_receive(const struct sr_dev_inst *sdi)
 	if (!sdi || !sdi->priv)
 		return SR_ERR_ARG;
 	devc = sdi->priv;
+	devc->acquisition_started = TRUE;
 
 	ret = rdtech_dps_get_state(sdi, &state, ST_CTX_PRE_ACQ);
 	if (ret != SR_OK)
@@ -672,11 +698,11 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 	ch = g_slist_nth_data(sdi->channels, 0);
 	send_value(sdi, ch, state.voltage,
 		SR_MQ_VOLTAGE, SR_MQFLAG_DC, SR_UNIT_VOLT,
-		devc->model->voltage_digits);
+		devc->model->ranges[devc->curr_range].voltage_digits);
 	ch = g_slist_nth_data(sdi->channels, 1);
 	send_value(sdi, ch, state.current,
 		SR_MQ_CURRENT, SR_MQFLAG_DC, SR_UNIT_AMPERE,
-		devc->model->current_digits);
+		devc->model->ranges[devc->curr_range].current_digits);
 	ch = g_slist_nth_data(sdi->channels, 2);
 	send_value(sdi, ch, state.power,
 		SR_MQ_POWER, 0, SR_UNIT_WATT, 2);

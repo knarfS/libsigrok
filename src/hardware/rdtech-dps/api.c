@@ -21,7 +21,6 @@
 
 #include <config.h>
 
-#include <math.h>
 #include <string.h>
 
 #include "protocol.h"
@@ -195,10 +194,10 @@ static struct sr_dev_inst *probe_device(struct sr_modbus_dev_inst *modbus,
 	devc = g_malloc0(sizeof(*devc));
 	sr_sw_limits_init(&devc->limits);
 	devc->model = model;
-	devc->current_multiplier = pow(10.0, model->current_digits);
-	devc->voltage_multiplier = pow(10.0, model->voltage_digits);
-
 	sdi->priv = devc;
+	ret = rdtech_dps_update_range(sdi);
+	if (ret != SR_OK)
+		return NULL;
 
 	return sdi;
 }
