@@ -27,9 +27,6 @@
 #include "protocol.h"
 
 /* These are the Modbus RTU registers for the family of rdtech-dps devices.
- *
- * Some registers are specific to a certain device. For example,
- * REG_RD_RANGE is specific to RD6012P.
  */
 enum rdtech_dps_register {
 	REG_DPS_USET       = 0x00, /* Mirror of 0x50 */
@@ -75,6 +72,10 @@ enum rdtech_dps_regulation_mode {
 	MODE_CC      = 1,
 };
 
+/*
+ * Some registers are specific to a certain device. For example,
+ * REG_RD_RANGE is specific to RD6012P.
+ */
 enum rdtech_rd_register {
 	REG_RD_MODEL = 0, /* u16 */
 	REG_RD_SERIAL = 1, /* u32 */
@@ -232,8 +233,10 @@ SR_PRIV void rdtech_dps_update_multipliers(const struct sr_dev_inst *sdi)
 	devc->voltage_multiplier = pow(10.0, range->voltage_digits);
 }
 
-/* Determine range of connected device. Don't do anything once
- * acquisition has started (since the range will then be tracked). */
+/* 
+ * Determine range of connected device. Don't do anything once
+ * acquisition has started (since the range will then be tracked).
+*/
 SR_PRIV int rdtech_dps_update_range(const struct sr_dev_inst *sdi)
 {
 	struct dev_context *devc;
@@ -241,8 +244,10 @@ SR_PRIV int rdtech_dps_update_range(const struct sr_dev_inst *sdi)
 	int ret;
 
 	devc = sdi->priv;
-	/* Only update range if there are multiple ranges and data
-	 * acquisition hasn't started. */
+	/*
+	 * Only update range if there are multiple ranges and data
+	 * acquisition hasn't started.
+	 */
 	if (devc->model->n_ranges == 1 || devc->acquisition_started)
 		return SR_OK;
 	if (devc->model->model_type != MODEL_RD)
@@ -638,9 +643,11 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 				devc->curr_range = reg_value ? 1 : 0;
 				rdtech_dps_update_multipliers(sdi);
 			}
-			/* We rely on the data acquisition to update
+			/*
+			 * We rely on the data acquisition to update
 			 * devc->curr_range. If we do it here, there
-			 * will be no range meta package. */
+			 * will be no range meta package.
+			 */
 			break;
 		default:
 			return SR_ERR_ARG;

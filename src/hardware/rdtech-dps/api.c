@@ -486,10 +486,8 @@ static int config_set(uint32_t key, GVariant *data,
 	case SR_CONF_RANGE:
 		range_str = g_variant_get_string(data, NULL);
 		for (i = 0; i < devc->model->n_ranges; ++i) {
-			if (g_strcmp0(devc->model->ranges[i].range_str,
-				      range_str)
-			    == 0)
-			{
+			if (g_strcmp0(devc->model->ranges[i].range_str, range_str)
+			    == 0) {
 				state.range = i;
 				state.mask |= STATE_RANGE;
 				return rdtech_dps_set_state(sdi, &state);
@@ -533,7 +531,7 @@ static int config_list(uint32_t key, GVariant **data,
 		g_variant_builder_init(&gvb, G_VARIANT_TYPE_ARRAY);
 		for (i = 0; i < devc->model->n_ranges; ++i)
 			g_variant_builder_add(&gvb, "s",
-					      devc->model->ranges[i].range_str);
+				devc->model->ranges[i].range_str);
 		*data = g_variant_builder_end(&gvb);
 		break;
 	default:
