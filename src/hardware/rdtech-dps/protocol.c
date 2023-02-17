@@ -375,7 +375,7 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		 */
 		g_mutex_lock(&devc->rw_mutex);
 		ret = rdtech_dps_read_holding_registers(modbus,
-			REG_DPS_USET, 10, registers);
+			REG_DPS_USET, REG_DPRS_ENABLE - REG_DPS_USET + 1, registers);
 		g_mutex_unlock(&devc->rw_mutex);
 		if (ret != SR_OK)
 			return ret;
@@ -425,7 +425,9 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		g_mutex_lock(&devc->rw_mutex);
 		ret = rdtech_dps_read_holding_registers(modbus,
 			REG_RD_VOLT_TGT,
-			devc->model->n_ranges > 1 ? 13 : 11,
+			devc->model->n_ranges > 1
+				? REG_RD_RANGE - REG_RD_VOLT_TGT + 1
+				: REG_RD_ENABLE - REG_RD_VOLT_TGT + 1,
 			registers);
 		g_mutex_unlock(&devc->rw_mutex);
 		if (ret != SR_OK)
