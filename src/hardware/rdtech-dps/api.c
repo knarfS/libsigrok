@@ -101,8 +101,10 @@ static struct rdtech_dps_range ranges_rd6012[] = {
 	{ "12A", 12, 60,  720, 2, 2 }
 };
 
-/* current digits for RD6012P is 4 for the 6A range (RTU reg
-   20 = 0) and 3 for the 12A range (RTU reg 20 = 1) */
+/*
+ * Current digits for RD6012P is 4 for the 6A range (RTU reg  20 = 0) and
+ * 3 for the 12A range (RTU reg 20 = 1)
+ * */
 static struct rdtech_dps_range ranges_rd6012p[] = {
 	{  "6A",  6, 60,  360, 4, 3 },
 	{ "12A", 12, 60,  720, 3, 3 }
@@ -118,24 +120,25 @@ static struct rdtech_dps_range ranges_rd6024[] = {
 
 /* model ID, model name, range */
 static const struct rdtech_dps_model supported_models[] = {
-	{ MODEL_DPS,  3005, "DPS3005", ARRAY_AND_SIZE (ranges_dps3005) },
-	{ MODEL_DPS,  5005, "DPS5005", ARRAY_AND_SIZE (ranges_dps5005) },
-	{ MODEL_DPS,  5205, "DPH5005", ARRAY_AND_SIZE (ranges_dps5005) },
-	{ MODEL_DPS,  5015, "DPS5015", ARRAY_AND_SIZE (ranges_dps5015) },
-	{ MODEL_DPS,  5020, "DPS5020", ARRAY_AND_SIZE (ranges_dps5020) },
-	{ MODEL_DPS,  8005, "DPS8005", ARRAY_AND_SIZE (ranges_dps8005) },
-	/* RD specs for models RD60nn taken from the 2020.12.2
-	   instruction manual, specs for RD6006P from the 2021.2.26
-	   (english) manual, specs for RD6012P from the 2021.10.26
-	   (english) manual, and, specs for RD6024P from the 2021.1.7
-	   (english) manual. */
-	{ MODEL_RD , 60061, "RD6006" , ARRAY_AND_SIZE (ranges_rd6006)  },
-	{ MODEL_RD , 60062, "RD6006" , ARRAY_AND_SIZE (ranges_rd6006)  },
-	{ MODEL_RD , 60065, "RD6006P", ARRAY_AND_SIZE (ranges_rd6006p) },
-	{ MODEL_RD , 60121, "RD6012" , ARRAY_AND_SIZE (ranges_rd6012)  },
-	{ MODEL_RD , 60125, "RD6012P", ARRAY_AND_SIZE (ranges_rd6012p) },
-	{ MODEL_RD , 60181, "RD6018" , ARRAY_AND_SIZE (ranges_rd6018)  },
-	{ MODEL_RD , 60241, "RD6024" , ARRAY_AND_SIZE (ranges_rd6024)  },
+	{ MODEL_DPS, 3005, "DPS3005", ARRAY_AND_SIZE(ranges_dps3005) },
+	{ MODEL_DPS, 5005, "DPS5005", ARRAY_AND_SIZE(ranges_dps5005) },
+	{ MODEL_DPS, 5205, "DPH5005", ARRAY_AND_SIZE(ranges_dps5005) },
+	{ MODEL_DPS, 5015, "DPS5015", ARRAY_AND_SIZE(ranges_dps5015) },
+	{ MODEL_DPS, 5020, "DPS5020", ARRAY_AND_SIZE(ranges_dps5020) },
+	{ MODEL_DPS, 8005, "DPS8005", ARRAY_AND_SIZE(ranges_dps8005) },
+	/*
+	 * Specs for models RD60nn taken from the 2020.12.2 instruction manual,
+	 * specs for RD6006P from the 2021.2.26 (english) manual,
+	 * specs for RD6012P from the 2021.10.26 (english) manual,
+	 * and specs for RD6024P from the 2021.1.7 (english) manual.
+	 */
+	{ MODEL_RD, 60061, "RD6006" , ARRAY_AND_SIZE(ranges_rd6006)  },
+	{ MODEL_RD, 60062, "RD6006" , ARRAY_AND_SIZE(ranges_rd6006)  },
+	{ MODEL_RD, 60065, "RD6006P", ARRAY_AND_SIZE(ranges_rd6006p) },
+	{ MODEL_RD, 60121, "RD6012" , ARRAY_AND_SIZE(ranges_rd6012)  },
+	{ MODEL_RD, 60125, "RD6012P", ARRAY_AND_SIZE(ranges_rd6012p) },
+	{ MODEL_RD, 60181, "RD6018" , ARRAY_AND_SIZE(ranges_rd6018)  },
+	{ MODEL_RD, 60241, "RD6024" , ARRAY_AND_SIZE(ranges_rd6024)  },
 };
 
 static struct sr_dev_driver rdtech_dps_driver_info;
@@ -453,7 +456,8 @@ static int config_get(uint32_t key, GVariant **data,
 			return ret;
 		if (!(state.mask & STATE_RANGE))
 			return SR_ERR_DATA;
-		*data = g_variant_new_string(devc->model->ranges[state.range].range_str);
+		*data = g_variant_new_string(
+			devc->model->ranges[state.range].range_str);
 		break;
 	default:
 		return SR_ERR_NA;
@@ -468,7 +472,7 @@ static int config_set(uint32_t key, GVariant *data,
 	struct dev_context *devc;
 	struct rdtech_dps_state state;
 	const char *range_str;
-	unsigned int i;
+	size_t i;
 
 	(void)cg;
 
@@ -503,7 +507,7 @@ static int config_set(uint32_t key, GVariant *data,
 		range_str = g_variant_get_string(data, NULL);
 		for (i = 0; i < devc->model->n_ranges; ++i) {
 			if (g_strcmp0(devc->model->ranges[i].range_str, range_str)
-			    == 0) {
+					== 0) {
 				state.range = i;
 				state.mask |= STATE_RANGE;
 				return rdtech_dps_set_state(sdi, &state);
@@ -521,9 +525,9 @@ static int config_list(uint32_t key, GVariant **data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
 	struct dev_context *devc;
-	GVariantBuilder gvb;
-	unsigned int i;
 	struct rdtech_dps_range *range;
+	GVariantBuilder gvb;
+	size_t i;
 
 	devc = (sdi) ? sdi->priv : NULL;
 
@@ -531,11 +535,11 @@ static int config_list(uint32_t key, GVariant **data,
 	case SR_CONF_SCAN_OPTIONS:
 	case SR_CONF_DEVICE_OPTIONS:
 		if (devc->model->n_ranges > 1)
-			return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts,
-				devopts_w_range);
+			return STD_CONFIG_LIST(key, data, sdi, cg, scanopts,
+				drvopts, devopts_w_range);
 		else
-			return STD_CONFIG_LIST(key, data, sdi, cg, scanopts, drvopts,
-				devopts);
+			return STD_CONFIG_LIST(key, data, sdi, cg, scanopts,
+				drvopts, devopts);
 	case SR_CONF_VOLTAGE_TARGET:
 		rdtech_dps_update_range(sdi);
 		range = &devc->model->ranges[devc->curr_range];

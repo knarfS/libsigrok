@@ -89,8 +89,7 @@ struct rdtech_dps_state {
 	} mask;
 	gboolean lock;
 	gboolean output_enabled, regulation_cc;
-	gboolean protect_ovp, protect_ocp;
-	gboolean protect_enabled;
+	gboolean protect_ovp, protect_ocp, protect_enabled;
 	float voltage_target, current_limit;
 	float ovp_threshold, ocp_threshold;
 	float voltage, current, power;

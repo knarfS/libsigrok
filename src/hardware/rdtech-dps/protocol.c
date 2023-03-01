@@ -26,8 +26,7 @@
 
 #include "protocol.h"
 
-/* These are the Modbus RTU registers for the family of rdtech-dps devices.
- */
+/* These are the Modbus RTU registers for the family of rdtech-dps devices. */
 enum rdtech_dps_register {
 	REG_DPS_USET       = 0x00, /* Mirror of 0x50 */
 	REG_DPS_ISET       = 0x01, /* Mirror of 0x51 */
@@ -233,10 +232,10 @@ SR_PRIV void rdtech_dps_update_multipliers(const struct sr_dev_inst *sdi)
 	devc->voltage_multiplier = pow(10.0, range->voltage_digits);
 }
 
-/* 
+/*
  * Determine range of connected device. Don't do anything once
  * acquisition has started (since the range will then be tracked).
-*/
+ */
 SR_PRIV int rdtech_dps_update_range(const struct sr_dev_inst *sdi)
 {
 	struct dev_context *devc;
@@ -244,6 +243,7 @@ SR_PRIV int rdtech_dps_update_range(const struct sr_dev_inst *sdi)
 	int ret;
 
 	devc = sdi->priv;
+
 	/*
 	 * Only update range if there are multiple ranges and data
 	 * acquisition hasn't started.
@@ -252,11 +252,14 @@ SR_PRIV int rdtech_dps_update_range(const struct sr_dev_inst *sdi)
 		return SR_OK;
 	if (devc->model->model_type != MODEL_RD)
 		return SR_ERR;
-	ret = rdtech_dps_read_holding_registers(sdi->conn, REG_RD_RANGE, 1, &range);
+
+	ret = rdtech_dps_read_holding_registers(sdi->conn,
+		REG_RD_RANGE, 1, &range);
 	if (ret != SR_OK)
 		return ret;
 	devc->curr_range = range ? 1 : 0;
 	rdtech_dps_update_multipliers(sdi);
+
 	return SR_OK;
 }
 
@@ -374,8 +377,8 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 		 * a hardware specific device driver ...
 		 */
 		g_mutex_lock(&devc->rw_mutex);
-		ret = rdtech_dps_read_holding_registers(modbus,
-			REG_DPS_USET, REG_DPS_ENABLE - REG_DPS_USET + 1, registers);
+		ret = rdtech_dps_read_holding_registers(modbus, REG_DPS_USET,
+			REG_DPS_ENABLE - REG_DPS_USET + 1, registers);
 		g_mutex_unlock(&devc->rw_mutex);
 		if (ret != SR_OK)
 			return ret;
@@ -503,10 +506,6 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	state->mask |= STATE_PROTECT_OVP;
 	state->protect_ocp = uses_ocp;
 	state->mask |= STATE_PROTECT_OCP;
- 	if (devc->model->n_ranges > 1) {
-		state->range = range;
-		state->mask |= STATE_RANGE;
-	}
 	state->protect_enabled = TRUE;
 	state->mask |= STATE_PROTECT_ENABLED;
 	state->voltage_target = volt_target;
@@ -523,6 +522,10 @@ SR_PRIV int rdtech_dps_get_state(const struct sr_dev_inst *sdi,
 	state->mask |= STATE_CURRENT;
 	state->power = curr_power;
 	state->mask |= STATE_POWER;
+	if (devc->model->n_ranges > 1) {
+		state->range = range;
+		state->mask |= STATE_RANGE;
+	}
 
 	return SR_OK;
 }
@@ -627,6 +630,21 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 			return SR_ERR_ARG;
 		}
 	}
+	if (state->mask & STATE_LOCK) {
+		switch (devc->model->model_type) {
+		case MODEL_DPS:
+			reg_value = state->lock ? 1 : 0;
+			ret = rdtech_dps_set_reg(sdi, REG_DPS_LOCK, reg_value);
+			if (ret != SR_OK)
+				return ret;
+			break;
+		case MODEL_RD:
+			/* Do nothing, _and_ silently succeed. */
+			break;
+		default:
+			return SR_ERR_ARG;
+		}
+	}
 	if (state->mask & STATE_RANGE) {
 		reg_value = state->range;
 		switch (devc->model->model_type) {
@@ -650,21 +668,6 @@ SR_PRIV int rdtech_dps_set_state(const struct sr_dev_inst *sdi,
 			 * devc->curr_range. If we do it here, there
 			 * will be no range meta package.
 			 */
-			break;
-		default:
-			return SR_ERR_ARG;
-		}
-	}
-	if (state->mask & STATE_LOCK) {
-		switch (devc->model->model_type) {
-		case MODEL_DPS:
-			reg_value = state->lock ? 1 : 0;
-			ret = rdtech_dps_set_reg(sdi, REG_DPS_LOCK, reg_value);
-			if (ret != SR_OK)
-				return ret;
-			break;
-		case MODEL_RD:
-			/* Do nothing, _and_ silently succeed. */
 			break;
 		default:
 			return SR_ERR_ARG;
@@ -694,14 +697,14 @@ SR_PRIV int rdtech_dps_seed_receive(const struct sr_dev_inst *sdi)
 		devc->curr_ovp_state = state.protect_ovp;
 	if (state.mask & STATE_PROTECT_OCP)
 		devc->curr_ocp_state = state.protect_ocp;
-	if (state.mask & STATE_RANGE) {
-		devc->curr_range = state.range;
-		rdtech_dps_update_multipliers(sdi);
-	}
 	if (state.mask & STATE_REGULATION_CC)
 		devc->curr_cc_state = state.regulation_cc;
 	if (state.mask & STATE_OUTPUT_ENABLED)
 		devc->curr_out_state = state.output_enabled;
+	if (state.mask & STATE_RANGE) {
+		devc->curr_range = state.range;
+		rdtech_dps_update_multipliers(sdi);
+	}
 
 	return SR_OK;
 }
@@ -715,7 +718,6 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 	int ret;
 	struct sr_channel *ch;
 	const char *regulation_text;
-	int r;
 
 	(void)fd;
 	(void)revents;
@@ -759,14 +761,6 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 			g_variant_new_boolean(state.protect_ocp));
 		devc->curr_ocp_state = state.protect_ocp;
 	}
-	if (devc->curr_range != state.range) {
-		r = state.range;
-		(void)sr_session_send_meta(sdi,
-			SR_CONF_RANGE,
-			g_variant_new_string(devc->model->ranges[r].range_str));
-		devc->curr_range = state.range;
-		rdtech_dps_update_multipliers(sdi);
-	}
 	if (devc->curr_cc_state != state.regulation_cc) {
 		regulation_text = state.regulation_cc ? "CC" : "CV";
 		(void)sr_session_send_meta(sdi, SR_CONF_REGULATION,
@@ -777,6 +771,13 @@ SR_PRIV int rdtech_dps_receive_data(int fd, int revents, void *cb_data)
 		(void)sr_session_send_meta(sdi, SR_CONF_ENABLED,
 			g_variant_new_boolean(state.output_enabled));
 		devc->curr_out_state = state.output_enabled;
+	}
+	if (devc->curr_range != state.range) {
+		(void)sr_session_send_meta(sdi, SR_CONF_RANGE,
+			g_variant_new_string(
+				devc->model->ranges[state.range].range_str));
+		devc->curr_range = state.range;
+		rdtech_dps_update_multipliers(sdi);
 	}
 
 	/* Check optional acquisition limits. */
