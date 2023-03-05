@@ -31,9 +31,9 @@ static const struct {
 	enum sr_mq mq;
 	int (*set_mode)(struct sr_scpi_dev_inst *scpi, enum sr_mqflag flags);
 } sr_mq_to_cmd_map[] = {
-	{ SR_MQ_VOLTAGE, set_mq_volt },
-	{ SR_MQ_CURRENT, set_mq_amp },
-	{ SR_MQ_RESISTANCE, set_mq_ohm },
+	{SR_MQ_VOLTAGE, set_mq_volt},
+	{SR_MQ_CURRENT, set_mq_amp},
+	{SR_MQ_RESISTANCE, set_mq_ohm},
 };
 
 static int set_mq_volt(struct sr_scpi_dev_inst *scpi, enum sr_mqflag flags)
@@ -62,14 +62,15 @@ static int set_mq_ohm(struct sr_scpi_dev_inst *scpi, enum sr_mqflag flags)
 }
 
 SR_PRIV int hp_3478a_set_mq(const struct sr_dev_inst *sdi, enum sr_mq mq,
-				enum sr_mqflag mq_flags)
+	enum sr_mqflag mq_flags)
 {
 	int ret;
 	size_t i;
 	struct sr_scpi_dev_inst *scpi = sdi->conn;
 	struct dev_context *devc = sdi->priv;
 
-	/* No need to send a command if we're not changing the measurement type. */
+	/* No need to send a command if we're not changing the measurement type.
+	 */
 	if (devc->measurement_mq == mq && devc->measurement_mq_flag == mq_flags)
 		return SR_OK;
 
@@ -120,7 +121,7 @@ SR_PRIV int hp_3478a_set_digits(const struct sr_dev_inst *sdi, uint8_t digits)
 		return SR_OK;
 
 	/* digits are the total number of digits, so we have to substract 1 */
-	ret = sr_scpi_send(scpi, "N%i", digits-1);
+	ret = sr_scpi_send(scpi, "N%i", digits - 1);
 	if (ret != SR_OK)
 		return ret;
 

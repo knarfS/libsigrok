@@ -31,14 +31,14 @@
 #define SCPI_READ_RETRY_TIMEOUT_US (10 * 1000)
 
 static const char *scpi_vendors[][2] = {
-	{ "Agilent Technologies", "Agilent" },
-	{ "CHROMA", "Chroma" },
-	{ "Chroma ATE", "Chroma" },
-	{ "HEWLETT-PACKARD", "HP" },
-	{ "Keysight Technologies", "Keysight" },
-	{ "PHILIPS", "Philips" },
-	{ "RIGOL TECHNOLOGIES", "Rigol" },
-	{ "Siglent Technologies", "Siglent" },
+	{"Agilent Technologies", "Agilent"},
+	{"CHROMA", "Chroma"},
+	{"Chroma ATE", "Chroma"},
+	{"HEWLETT-PACKARD", "HP"},
+	{"Keysight Technologies", "Keysight"},
+	{"PHILIPS", "Philips"},
+	{"RIGOL TECHNOLOGIES", "Rigol"},
+	{"Siglent Technologies", "Siglent"},
 };
 
 /**
@@ -57,20 +57,18 @@ static int parse_strict_bool(const char *str, gboolean *ret)
 	if (!str)
 		return SR_ERR_ARG;
 
-	if (!g_strcmp0(str, "1") ||
-	    !g_ascii_strncasecmp(str, "y", 1) ||
-	    !g_ascii_strncasecmp(str, "t", 1) ||
-	    !g_ascii_strncasecmp(str, "yes", 3) ||
-	    !g_ascii_strncasecmp(str, "true", 4) ||
-	    !g_ascii_strncasecmp(str, "on", 2)) {
+	if (!g_strcmp0(str, "1") || !g_ascii_strncasecmp(str, "y", 1) ||
+		!g_ascii_strncasecmp(str, "t", 1) ||
+		!g_ascii_strncasecmp(str, "yes", 3) ||
+		!g_ascii_strncasecmp(str, "true", 4) ||
+		!g_ascii_strncasecmp(str, "on", 2)) {
 		*ret = TRUE;
 		return SR_OK;
-	} else if (!g_strcmp0(str, "0") ||
-		   !g_ascii_strncasecmp(str, "n", 1) ||
-		   !g_ascii_strncasecmp(str, "f", 1) ||
-		   !g_ascii_strncasecmp(str, "no", 2) ||
-		   !g_ascii_strncasecmp(str, "false", 5) ||
-		   !g_ascii_strncasecmp(str, "off", 3)) {
+	} else if (!g_strcmp0(str, "0") || !g_ascii_strncasecmp(str, "n", 1) ||
+		!g_ascii_strncasecmp(str, "f", 1) ||
+		!g_ascii_strncasecmp(str, "no", 2) ||
+		!g_ascii_strncasecmp(str, "false", 5) ||
+		!g_ascii_strncasecmp(str, "off", 3)) {
 		*ret = FALSE;
 		return SR_OK;
 	}
@@ -87,8 +85,7 @@ SR_PRIV extern const struct sr_scpi_dev_inst scpi_visa_dev;
 SR_PRIV extern const struct sr_scpi_dev_inst scpi_libgpib_dev;
 
 static const struct sr_scpi_dev_inst *scpi_devs[] = {
-	&scpi_tcp_raw_dev,
-	&scpi_tcp_rigol_dev,
+	&scpi_tcp_raw_dev, &scpi_tcp_rigol_dev,
 #ifdef HAVE_LIBUSB_1_0
 	&scpi_usbtmc_libusb_dev,
 #endif
@@ -107,8 +104,8 @@ static const struct sr_scpi_dev_inst *scpi_devs[] = {
 };
 
 static struct sr_dev_inst *sr_scpi_scan_resource(struct drv_context *drvc,
-		const char *resource, const char *serialcomm,
-		struct sr_dev_inst *(*probe_device)(struct sr_scpi_dev_inst *scpi))
+	const char *resource, const char *serialcomm,
+	struct sr_dev_inst *(*probe_device)(struct sr_scpi_dev_inst *scpi))
 {
 	struct sr_scpi_dev_inst *scpi;
 	struct sr_dev_inst *sdi;
@@ -143,8 +140,8 @@ static struct sr_dev_inst *sr_scpi_scan_resource(struct drv_context *drvc,
  *
  * @return SR_OK on success, SR_ERR on failure.
  */
-static int scpi_send_variadic(struct sr_scpi_dev_inst *scpi,
-			 const char *format, va_list args)
+static int scpi_send_variadic(struct sr_scpi_dev_inst *scpi, const char *format,
+	va_list args)
 {
 	va_list args_copy;
 	char *buf;
@@ -231,8 +228,8 @@ static int scpi_read_data(struct sr_scpi_dev_inst *scpi, char *buf, int maxlen)
  *
  * @return read length on success, SR_ERR* on failure.
  */
-static int scpi_read_response(struct sr_scpi_dev_inst *scpi,
-				GString *response, gint64 abs_timeout_us)
+static int scpi_read_response(struct sr_scpi_dev_inst *scpi, GString *response,
+	gint64 abs_timeout_us)
 {
 	int len, space;
 
@@ -267,8 +264,8 @@ static int scpi_read_response(struct sr_scpi_dev_inst *scpi,
  *
  * @return SR_OK on success, SR_ERR on failure.
  */
-static int scpi_get_data(struct sr_scpi_dev_inst *scpi,
-				const char *command, GString **scpi_response)
+static int scpi_get_data(struct sr_scpi_dev_inst *scpi, const char *command,
+	GString **scpi_response)
 {
 	int ret;
 	GString *response;
@@ -312,7 +309,7 @@ static int scpi_get_data(struct sr_scpi_dev_inst *scpi,
 }
 
 SR_PRIV GSList *sr_scpi_scan(struct drv_context *drvc, GSList *options,
-		struct sr_dev_inst *(*probe_device)(struct sr_scpi_dev_inst *scpi))
+	struct sr_dev_inst *(*probe_device)(struct sr_scpi_dev_inst *scpi))
 {
 	GSList *resources, *l, *devices;
 	struct sr_dev_inst *sdi;
@@ -339,7 +336,7 @@ SR_PRIV GSList *sr_scpi_scan(struct drv_context *drvc, GSList *options,
 				continue;
 			}
 			conn = res[0];
-			comm = serialcomm ? : res[1];
+			comm = serialcomm ?: res[1];
 			sdi = sr_scpi_scan_resource(drvc, conn, comm, probe_device);
 			if (sdi) {
 				devices = g_slist_append(devices, sdi);
@@ -351,20 +348,22 @@ SR_PRIV GSList *sr_scpi_scan(struct drv_context *drvc, GSList *options,
 	}
 
 	if (!devices && resource) {
-		sdi = sr_scpi_scan_resource(drvc, resource, serialcomm, probe_device);
+		sdi = sr_scpi_scan_resource(drvc, resource, serialcomm,
+			probe_device);
 		if (sdi)
 			devices = g_slist_append(NULL, sdi);
 	}
 
 	/* Tack a copy of the newly found devices onto the driver list. */
 	if (devices)
-		drvc->instances = g_slist_concat(drvc->instances, g_slist_copy(devices));
+		drvc->instances = g_slist_concat(drvc->instances,
+			g_slist_copy(devices));
 
 	return devices;
 }
 
 SR_PRIV struct sr_scpi_dev_inst *scpi_dev_inst_new(struct drv_context *drvc,
-		const char *resource, const char *serialcomm)
+	const char *resource, const char *serialcomm)
 {
 	struct sr_scpi_dev_inst *scpi = NULL;
 	const struct sr_scpi_dev_inst *scpi_dev;
@@ -381,7 +380,7 @@ SR_PRIV struct sr_scpi_dev_inst *scpi_dev_inst_new(struct drv_context *drvc,
 			scpi->read_timeout_us = 1000 * 1000;
 			params = g_strsplit(resource, "/", 0);
 			if (scpi->dev_inst_new(scpi->priv, drvc, resource,
-			                       params, serialcomm) != SR_OK) {
+				    params, serialcomm) != SR_OK) {
 				sr_scpi_free(scpi);
 				scpi = NULL;
 			}
@@ -418,8 +417,7 @@ SR_PRIV int sr_scpi_open(struct sr_scpi_dev_inst *scpi)
  *
  * @return SR_OK on success, SR_ERR on failure.
  */
-SR_PRIV int sr_scpi_connection_id(struct sr_scpi_dev_inst *scpi,
-		char **connection_id)
+SR_PRIV int sr_scpi_connection_id(struct sr_scpi_dev_inst *scpi, char **connection_id)
 {
 	return scpi->connection_id(scpi, connection_id);
 }
@@ -438,8 +436,8 @@ SR_PRIV int sr_scpi_connection_id(struct sr_scpi_dev_inst *scpi,
  *         SR_ERR_MALLOC upon memory allocation errors.
  */
 SR_PRIV int sr_scpi_source_add(struct sr_session *session,
-		struct sr_scpi_dev_inst *scpi, int events, int timeout,
-		sr_receive_data_callback cb, void *cb_data)
+	struct sr_scpi_dev_inst *scpi, int events, int timeout,
+	sr_receive_data_callback cb, void *cb_data)
 {
 	return scpi->source_add(session, scpi->priv, events, timeout, cb, cb_data);
 }
@@ -455,7 +453,7 @@ SR_PRIV int sr_scpi_source_add(struct sr_session *session,
  *         internal errors.
  */
 SR_PRIV int sr_scpi_source_remove(struct sr_session *session,
-		struct sr_scpi_dev_inst *scpi)
+	struct sr_scpi_dev_inst *scpi)
 {
 	return scpi->source_remove(session, scpi->priv);
 }
@@ -468,8 +466,7 @@ SR_PRIV int sr_scpi_source_remove(struct sr_session *session,
  *
  * @return SR_OK on success, SR_ERR on failure.
  */
-SR_PRIV int sr_scpi_send(struct sr_scpi_dev_inst *scpi,
-			 const char *format, ...)
+SR_PRIV int sr_scpi_send(struct sr_scpi_dev_inst *scpi, const char *format, ...)
 {
 	va_list args;
 	int ret;
@@ -493,7 +490,7 @@ SR_PRIV int sr_scpi_send(struct sr_scpi_dev_inst *scpi,
  * @return SR_OK on success, SR_ERR on failure.
  */
 SR_PRIV int sr_scpi_send_variadic(struct sr_scpi_dev_inst *scpi,
-			 const char *format, va_list args)
+	const char *format, va_list args)
 {
 	int ret;
 
@@ -525,8 +522,7 @@ SR_PRIV int sr_scpi_read_begin(struct sr_scpi_dev_inst *scpi)
  *
  * @return Number of bytes read, or SR_ERR upon failure.
  */
-SR_PRIV int sr_scpi_read_data(struct sr_scpi_dev_inst *scpi,
-			char *buf, int maxlen)
+SR_PRIV int sr_scpi_read_data(struct sr_scpi_dev_inst *scpi, char *buf, int maxlen)
 {
 	int ret;
 
@@ -549,8 +545,7 @@ SR_PRIV int sr_scpi_read_data(struct sr_scpi_dev_inst *scpi,
  *
  * @return Number of bytes read, or SR_ERR upon failure.
  */
-SR_PRIV int sr_scpi_write_data(struct sr_scpi_dev_inst *scpi,
-			char *buf, int maxlen)
+SR_PRIV int sr_scpi_write_data(struct sr_scpi_dev_inst *scpi, char *buf, int maxlen)
 {
 	int ret;
 
@@ -622,7 +617,7 @@ SR_PRIV void sr_scpi_free(struct sr_scpi_dev_inst *scpi)
  * @return SR_OK on success, SR_ERR* on failure.
  */
 SR_PRIV int sr_scpi_get_string(struct sr_scpi_dev_inst *scpi,
-			       const char *command, char **scpi_response)
+	const char *command, char **scpi_response)
 {
 	GString *response;
 
@@ -662,7 +657,7 @@ SR_PRIV int sr_scpi_get_string(struct sr_scpi_dev_inst *scpi,
  * @return read length on success, SR_ERR* on failure.
  */
 SR_PRIV int sr_scpi_read_response(struct sr_scpi_dev_inst *scpi,
-				  GString *response, gint64 abs_timeout_us)
+	GString *response, gint64 abs_timeout_us)
 {
 	int ret;
 
@@ -673,8 +668,8 @@ SR_PRIV int sr_scpi_read_response(struct sr_scpi_dev_inst *scpi,
 	return ret;
 }
 
-SR_PRIV int sr_scpi_get_data(struct sr_scpi_dev_inst *scpi,
-			     const char *command, GString **scpi_response)
+SR_PRIV int sr_scpi_get_data(struct sr_scpi_dev_inst *scpi, const char *command,
+	GString **scpi_response)
 {
 	int ret;
 
@@ -695,8 +690,8 @@ SR_PRIV int sr_scpi_get_data(struct sr_scpi_dev_inst *scpi,
  *
  * @return SR_OK on success, SR_ERR* on failure.
  */
-SR_PRIV int sr_scpi_get_bool(struct sr_scpi_dev_inst *scpi,
-			     const char *command, gboolean *scpi_response)
+SR_PRIV int sr_scpi_get_bool(struct sr_scpi_dev_inst *scpi, const char *command,
+	gboolean *scpi_response)
 {
 	int ret;
 	char *response;
@@ -727,8 +722,8 @@ SR_PRIV int sr_scpi_get_bool(struct sr_scpi_dev_inst *scpi,
  *
  * @return SR_OK on success, SR_ERR* on failure.
  */
-SR_PRIV int sr_scpi_get_int(struct sr_scpi_dev_inst *scpi,
-			    const char *command, int *scpi_response)
+SR_PRIV int sr_scpi_get_int(struct sr_scpi_dev_inst *scpi, const char *command,
+	int *scpi_response)
 {
 	int ret;
 	struct sr_rational ret_rational;
@@ -765,7 +760,7 @@ SR_PRIV int sr_scpi_get_int(struct sr_scpi_dev_inst *scpi,
  * @return SR_OK on success, SR_ERR* on failure.
  */
 SR_PRIV int sr_scpi_get_float(struct sr_scpi_dev_inst *scpi,
-			      const char *command, float *scpi_response)
+	const char *command, float *scpi_response)
 {
 	int ret;
 	char *response;
@@ -797,7 +792,7 @@ SR_PRIV int sr_scpi_get_float(struct sr_scpi_dev_inst *scpi,
  * @return SR_OK on success, SR_ERR* on failure.
  */
 SR_PRIV int sr_scpi_get_double(struct sr_scpi_dev_inst *scpi,
-			       const char *command, double *scpi_response)
+	const char *command, double *scpi_response)
 {
 	int ret;
 	char *response;
@@ -857,7 +852,7 @@ SR_PRIV int sr_scpi_get_opc(struct sr_scpi_dev_inst *scpi)
  *         error or upon no response.
  */
 SR_PRIV int sr_scpi_get_floatv(struct sr_scpi_dev_inst *scpi,
-			       const char *command, GArray **scpi_response)
+	const char *command, GArray **scpi_response)
 {
 	int ret;
 	float tmp;
@@ -876,8 +871,8 @@ SR_PRIV int sr_scpi_get_floatv(struct sr_scpi_dev_inst *scpi,
 	tokens = g_strsplit(response, ",", 0);
 	token_count = g_strv_length(tokens);
 
-	response_array = g_array_sized_new(TRUE, FALSE,
-		sizeof(float), token_count + 1);
+	response_array = g_array_sized_new(TRUE, FALSE, sizeof(float),
+		token_count + 1);
 
 	ptr = tokens;
 	while (*ptr) {
@@ -917,7 +912,7 @@ SR_PRIV int sr_scpi_get_floatv(struct sr_scpi_dev_inst *scpi,
  *         error or upon no response.
  */
 SR_PRIV int sr_scpi_get_uint8v(struct sr_scpi_dev_inst *scpi,
-			       const char *command, GArray **scpi_response)
+	const char *command, GArray **scpi_response)
 {
 	int tmp, ret;
 	char *response;
@@ -935,8 +930,8 @@ SR_PRIV int sr_scpi_get_uint8v(struct sr_scpi_dev_inst *scpi,
 	tokens = g_strsplit(response, ",", 0);
 	token_count = g_strv_length(tokens);
 
-	response_array = g_array_sized_new(TRUE, FALSE,
-		sizeof(uint8_t), token_count + 1);
+	response_array = g_array_sized_new(TRUE, FALSE, sizeof(uint8_t),
+		token_count + 1);
 
 	ptr = tokens;
 	while (*ptr) {
@@ -976,10 +971,10 @@ SR_PRIV int sr_scpi_get_uint8v(struct sr_scpi_dev_inst *scpi,
  *         error or upon no response.
  */
 SR_PRIV int sr_scpi_get_block(struct sr_scpi_dev_inst *scpi,
-			       const char *command, GByteArray **scpi_response)
+	const char *command, GByteArray **scpi_response)
 {
 	int ret;
-	GString* response;
+	GString *response;
 	gsize oldlen;
 	char buf[10];
 	long llen;
@@ -1098,8 +1093,8 @@ SR_PRIV int sr_scpi_get_block(struct sr_scpi_dev_inst *scpi,
 			oldlen = response->len;
 			ret = scpi_read_response(scpi, response, timeout);
 
-			/* On timeout truncate the buffer and send the partial response
-			 * instead of getting stuck on timeouts...
+			/* On timeout truncate the buffer and send the partial
+			 * response instead of getting stuck on timeouts...
 			 */
 			if (ret == SR_ERR_TIMEOUT) {
 				datalen = oldlen;
@@ -1111,7 +1106,8 @@ SR_PRIV int sr_scpi_get_block(struct sr_scpi_dev_inst *scpi,
 				return ret;
 			}
 			if (ret > 0)
-				timeout = g_get_monotonic_time() + scpi->read_timeout_us;
+				timeout = g_get_monotonic_time() +
+					scpi->read_timeout_us;
 		} while (response->len < (unsigned long)(datalen));
 	}
 
@@ -1119,7 +1115,7 @@ SR_PRIV int sr_scpi_get_block(struct sr_scpi_dev_inst *scpi,
 
 	/* Convert received data to byte array. */
 	*scpi_response = g_byte_array_new_take(
-		(guint8*)g_string_free(response, FALSE), datalen);
+		(guint8 *)g_string_free(response, FALSE), datalen);
 
 	return SR_OK;
 }
@@ -1137,7 +1133,7 @@ SR_PRIV int sr_scpi_get_block(struct sr_scpi_dev_inst *scpi,
  * @return SR_OK upon success, SR_ERR* on failure.
  */
 SR_PRIV int sr_scpi_get_hw_id(struct sr_scpi_dev_inst *scpi,
-			      struct sr_scpi_hw_info **scpi_response)
+	struct sr_scpi_hw_info **scpi_response)
 {
 	int num_tokens, ret;
 	char *response;
@@ -1273,8 +1269,7 @@ SR_PRIV const char *sr_vendor_alias(const char *raw_vendor)
 	return raw_vendor;
 }
 
-SR_PRIV const char *sr_scpi_cmd_get(const struct scpi_command *cmdtable,
-		int command)
+SR_PRIV const char *sr_scpi_cmd_get(const struct scpi_command *cmdtable, int command)
 {
 	unsigned int i;
 	const char *cmd;
@@ -1294,9 +1289,8 @@ SR_PRIV const char *sr_scpi_cmd_get(const struct scpi_command *cmdtable,
 }
 
 SR_PRIV int sr_scpi_cmd(const struct sr_dev_inst *sdi,
-		const struct scpi_command *cmdtable,
-		int channel_command, const char *channel_name,
-		int command, ...)
+	const struct scpi_command *cmdtable, int channel_command,
+	const char *channel_name, int command, ...)
 {
 	struct sr_scpi_dev_inst *scpi;
 	va_list args;
@@ -1316,7 +1310,7 @@ SR_PRIV int sr_scpi_cmd(const struct sr_dev_inst *sdi,
 	/* Select channel. */
 	channel_cmd = sr_scpi_cmd_get(cmdtable, channel_command);
 	if (channel_cmd && channel_name &&
-			g_strcmp0(channel_name, scpi->actual_channel_name)) {
+		g_strcmp0(channel_name, scpi->actual_channel_name)) {
 		sr_spew("sr_scpi_cmd(): new channel = %s", channel_name);
 		g_free(scpi->actual_channel_name);
 		scpi->actual_channel_name = g_strdup(channel_name);
@@ -1335,9 +1329,9 @@ SR_PRIV int sr_scpi_cmd(const struct sr_dev_inst *sdi,
 }
 
 SR_PRIV int sr_scpi_cmd_resp(const struct sr_dev_inst *sdi,
-		const struct scpi_command *cmdtable,
-		int channel_command, const char *channel_name,
-		GVariant **gvar, const GVariantType *gvtype, int command, ...)
+	const struct scpi_command *cmdtable, int channel_command,
+	const char *channel_name, GVariant **gvar, const GVariantType *gvtype,
+	int command, ...)
 {
 	struct sr_scpi_dev_inst *scpi;
 	va_list args;
@@ -1361,7 +1355,7 @@ SR_PRIV int sr_scpi_cmd_resp(const struct sr_dev_inst *sdi,
 	/* Select channel. */
 	channel_cmd = sr_scpi_cmd_get(cmdtable, channel_command);
 	if (channel_cmd && channel_name &&
-			g_strcmp0(channel_name, scpi->actual_channel_name)) {
+		g_strcmp0(channel_name, scpi->actual_channel_name)) {
 		sr_spew("sr_scpi_cmd_get(): new channel = %s", channel_name);
 		g_free(scpi->actual_channel_name);
 		scpi->actual_channel_name = g_strdup(channel_name);

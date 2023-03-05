@@ -104,7 +104,8 @@ static void rigol_ds_set_wait_event(struct dev_context *devc, enum wait_events e
  * Waiting for a event will return a timeout after 2 to 3 seconds in order
  * to not block the application.
  */
-static int rigol_ds_event_wait(const struct sr_dev_inst *sdi, char status1, char status2)
+static int rigol_ds_event_wait(const struct sr_dev_inst *sdi, char status1,
+	char status2)
 {
 	char *buf, c;
 	struct dev_context *devc;
@@ -131,7 +132,8 @@ static int rigol_ds_event_wait(const struct sr_dev_inst *sdi, char status1, char
 				return SR_ERR_TIMEOUT;
 			}
 
-			if (sr_scpi_get_string(sdi->conn, ":TRIG:STAT?", &buf) != SR_OK)
+			if (sr_scpi_get_string(sdi->conn, ":TRIG:STAT?", &buf) !=
+				SR_OK)
 				return SR_ERR;
 			c = buf[0];
 			g_free(buf);
@@ -146,7 +148,8 @@ static int rigol_ds_event_wait(const struct sr_dev_inst *sdi, char status1, char
 				return SR_ERR_TIMEOUT;
 			}
 
-			if (sr_scpi_get_string(sdi->conn, ":TRIG:STAT?", &buf) != SR_OK)
+			if (sr_scpi_get_string(sdi->conn, ":TRIG:STAT?", &buf) !=
+				SR_OK)
 				return SR_ERR;
 			c = buf[0];
 			g_free(buf);
@@ -191,9 +194,12 @@ static int rigol_ds_trigger_wait(const struct sr_dev_inst *sdi)
 			 * Timebase * num hor. divs * 85(%) * 1e6(usecs) / 100
 			 * -> 85 percent of sweep time
 			 */
-			s = (devc->timebase * devc->model->series->num_horizontal_divs
-			     * 85e6) / 100L;
-			sr_spew("Sleeping for %ld usecs instead of trigger-wait", s);
+			s = (devc->timebase *
+				    devc->model->series->num_horizontal_divs *
+				    85e6) /
+				100L;
+			sr_spew("Sleeping for %ld usecs instead of trigger-wait",
+				s);
 			g_usleep(s);
 		}
 		rigol_ds_set_wait_event(devc, WAIT_NONE);
@@ -228,15 +234,14 @@ static int rigol_ds_check_stop(const struct sr_dev_inst *sdi)
 		if (rigol_ds_config_set(sdi, ":WAV:SOUR LA") != SR_OK)
 			return SR_ERR;
 	} else {
-		if (rigol_ds_config_set(sdi, ":WAV:SOUR CHAN%d",
-				ch->index + 1) != SR_OK)
+		if (rigol_ds_config_set(sdi, ":WAV:SOUR CHAN%d", ch->index + 1) !=
+			SR_OK)
 			return SR_ERR;
 	}
 	/* Check that the number of samples will be accepted */
 	if (rigol_ds_config_set(sdi, ":WAV:POIN %d",
-			ch->type == SR_CHANNEL_LOGIC ?
-				devc->digital_frame_size :
-				devc->analog_frame_size) != SR_OK)
+		    ch->type == SR_CHANNEL_LOGIC ? devc->digital_frame_size
+						 : devc->analog_frame_size) != SR_OK)
 		return SR_ERR;
 	if (sr_scpi_get_int(sdi->conn, "*ESR?", &tmp) != SR_OK)
 		return SR_ERR;
@@ -276,7 +281,6 @@ static int rigol_ds_block_wait(const struct sr_dev_inst *sdi)
 		return SR_ERR;
 
 	if (devc->model->series->protocol == PROTOCOL_V3) {
-
 		start = time(NULL);
 
 		do {
@@ -291,10 +295,14 @@ static int rigol_ds_block_wait(const struct sr_dev_inst *sdi)
 			 * it too much with SCPI requests but don't wait too
 			 * long for short sample frame sizes.
 			 */
-			g_usleep(devc->analog_frame_size < (15 * 1000) ? (100 * 1000) : (1000 * 1000));
+			g_usleep(devc->analog_frame_size < (15 * 1000)
+					? (100 * 1000)
+					: (1000 * 1000));
 
-			/* "READ,nnnn" (still working) or "IDLE,nnnn" (finished) */
-			if (sr_scpi_get_string(sdi->conn, ":WAV:STAT?", &buf) != SR_OK)
+			/* "READ,nnnn" (still working) or "IDLE,nnnn" (finished)
+			 */
+			if (sr_scpi_get_string(sdi->conn, ":WAV:STAT?", &buf) !=
+				SR_OK)
 				return SR_ERR;
 			ret = parse_int(buf + 5, &len);
 			c = buf[0];
@@ -310,7 +318,8 @@ static int rigol_ds_block_wait(const struct sr_dev_inst *sdi)
 }
 
 /* Send a configuration setting. */
-SR_PRIV int rigol_ds_config_set(const struct sr_dev_inst *sdi, const char *format, ...)
+SR_PRIV int rigol_ds_config_set(const struct sr_dev_inst *sdi,
+	const char *format, ...)
 {
 	struct dev_context *devc = sdi->priv;
 	va_list args;
@@ -324,7 +333,8 @@ SR_PRIV int rigol_ds_config_set(const struct sr_dev_inst *sdi, const char *forma
 		return SR_ERR;
 
 	if (devc->model->series->protocol == PROTOCOL_V2) {
-		/* The DS1000 series needs this stupid delay, *OPC? doesn't work. */
+		/* The DS1000 series needs this stupid delay, *OPC? doesn't
+		 * work. */
 		sr_spew("delay %dms", 100);
 		g_usleep(100 * 1000);
 		return SR_OK;
@@ -348,14 +358,15 @@ SR_PRIV int rigol_ds_capture_start(const struct sr_dev_inst *sdi)
 	const gboolean first_frame = (devc->num_frames == 0);
 
 	uint64_t limit_frames = devc->limit_frames;
-	if (devc->num_frames_segmented != 0 && devc->num_frames_segmented < limit_frames)
+	if (devc->num_frames_segmented != 0 &&
+		devc->num_frames_segmented < limit_frames)
 		limit_frames = devc->num_frames_segmented;
 	if (limit_frames == 0)
 		sr_dbg("Starting data capture for frameset %" PRIu64,
-		       devc->num_frames + 1);
+			devc->num_frames + 1);
 	else
-		sr_dbg("Starting data capture for frameset %" PRIu64 " of %"
-		       PRIu64, devc->num_frames + 1, limit_frames);
+		sr_dbg("Starting data capture for frameset %" PRIu64 " of %" PRIu64,
+			devc->num_frames + 1, limit_frames);
 
 	switch (devc->model->series->protocol) {
 	case PROTOCOL_V1:
@@ -363,7 +374,8 @@ SR_PRIV int rigol_ds_capture_start(const struct sr_dev_inst *sdi)
 		break;
 	case PROTOCOL_V2:
 		if (devc->data_source == DATA_SOURCE_LIVE) {
-			if (rigol_ds_config_set(sdi, ":WAV:POIN:MODE NORMAL") != SR_OK)
+			if (rigol_ds_config_set(sdi, ":WAV:POIN:MODE NORMAL") !=
+				SR_OK)
 				return SR_ERR;
 			rigol_ds_set_wait_event(devc, WAIT_TRIGGER);
 		} else {
@@ -371,9 +383,11 @@ SR_PRIV int rigol_ds_capture_start(const struct sr_dev_inst *sdi)
 				return SR_ERR;
 			if (rigol_ds_config_set(sdi, ":WAV:POIN:MODE RAW") != SR_OK)
 				return SR_ERR;
-			if (sr_scpi_get_string(sdi->conn, ":TRIG:MODE?", &trig_mode) != SR_OK)
+			if (sr_scpi_get_string(sdi->conn, ":TRIG:MODE?",
+				    &trig_mode) != SR_OK)
 				return SR_ERR;
-			ret = rigol_ds_config_set(sdi, ":TRIG:%s:SWE SING", trig_mode);
+			ret = rigol_ds_config_set(sdi, ":TRIG:%s:SWE SING",
+				trig_mode);
 			g_free(trig_mode);
 			if (ret != SR_OK)
 				return SR_ERR;
@@ -385,28 +399,36 @@ SR_PRIV int rigol_ds_capture_start(const struct sr_dev_inst *sdi)
 	case PROTOCOL_V3:
 	case PROTOCOL_V4:
 	case PROTOCOL_V5:
-		if (first_frame && rigol_ds_config_set(sdi, ":WAV:FORM BYTE") != SR_OK)
+		if (first_frame &&
+			rigol_ds_config_set(sdi, ":WAV:FORM BYTE") != SR_OK)
 			return SR_ERR;
 		if (devc->data_source == DATA_SOURCE_LIVE) {
-			if (first_frame && rigol_ds_config_set(sdi, ":WAV:MODE NORM") != SR_OK)
+			if (first_frame &&
+				rigol_ds_config_set(sdi, ":WAV:MODE NORM") != SR_OK)
 				return SR_ERR;
 			devc->analog_frame_size = devc->model->series->live_samples;
 			devc->digital_frame_size = devc->model->series->live_samples;
 			rigol_ds_set_wait_event(devc, WAIT_TRIGGER);
 		} else {
 			if (devc->model->series->protocol == PROTOCOL_V3) {
-				if (first_frame && rigol_ds_config_set(sdi, ":WAV:MODE RAW") != SR_OK)
+				if (first_frame &&
+					rigol_ds_config_set(sdi,
+						":WAV:MODE RAW") != SR_OK)
 					return SR_ERR;
 			} else if (devc->model->series->protocol >= PROTOCOL_V4) {
 				num_channels = 0;
 
-				/* Channels 3 and 4 are multiplexed with D0-7 and D8-15 */
+				/* Channels 3 and 4 are multiplexed with D0-7
+				 * and D8-15 */
 				for (i = 0; i < devc->model->analog_channels; i++) {
 					if (devc->analog_channels[i]) {
 						num_channels++;
-					} else if (i >= 2 && devc->model->has_digital) {
+					} else if (i >= 2 &&
+						devc->model->has_digital) {
 						for (j = 0; j < 8; j++) {
-							if (devc->digital_channels[8 * (i - 2) + j]) {
+							if (devc->digital_channels[8 *
+									    (i - 2) +
+								    j]) {
 								num_channels++;
 								break;
 							}
@@ -415,36 +437,41 @@ SR_PRIV int rigol_ds_capture_start(const struct sr_dev_inst *sdi)
 				}
 
 				buffer_samples = devc->model->series->buffer_samples;
-				if (first_frame && buffer_samples == 0)
-				{
-					/* The DS4000 series does not have a fixed memory depth, it
-					 * can be chosen from the menu and also varies with number
-					 * of active channels. Retrieve the actual number with the
-					 * ACQ:MDEP command. */
-					sr_scpi_get_int(sdi->conn, "ACQ:MDEP?", &buffer_samples);
-					devc->analog_frame_size = devc->digital_frame_size =
+				if (first_frame && buffer_samples == 0) {
+					/* The DS4000 series does not have a
+					 * fixed memory depth, it can be chosen
+					 * from the menu and also varies with
+					 * number of active channels. Retrieve
+					 * the actual number with the ACQ:MDEP
+					 * command. */
+					sr_scpi_get_int(sdi->conn, "ACQ:MDEP?",
+						&buffer_samples);
+					devc->analog_frame_size =
+						devc->digital_frame_size =
 							buffer_samples;
-				}
-				else if (first_frame)
-				{
-					/* The DS1000Z series has a fixed memory depth which we
-					 * need to divide correctly according to the number of
+				} else if (first_frame) {
+					/* The DS1000Z series has a fixed memory
+					 * depth which we need to divide
+					 * correctly according to the number of
 					 * active channels. */
-					devc->analog_frame_size = devc->digital_frame_size =
-						num_channels == 1 ?
-							buffer_samples :
-								num_channels == 2 ?
-									buffer_samples / 2 :
-									buffer_samples / 4;
+					devc->analog_frame_size =
+						devc->digital_frame_size =
+							num_channels == 1
+						? buffer_samples
+						: num_channels == 2
+						? buffer_samples / 2
+						: buffer_samples / 4;
 				}
 			}
 
-			if (devc->data_source == DATA_SOURCE_LIVE && rigol_ds_config_set(sdi, ":SINGL") != SR_OK)
+			if (devc->data_source == DATA_SOURCE_LIVE &&
+				rigol_ds_config_set(sdi, ":SINGL") != SR_OK)
 				return SR_ERR;
 			rigol_ds_set_wait_event(devc, WAIT_STOP);
 			if (devc->data_source == DATA_SOURCE_SEGMENTED &&
-					devc->model->series->protocol <= PROTOCOL_V4)
-				if (rigol_ds_config_set(sdi, "FUNC:WREP:FCUR %d", devc->num_frames + 1) != SR_OK)
+				devc->model->series->protocol <= PROTOCOL_V4)
+				if (rigol_ds_config_set(sdi, "FUNC:WREP:FCUR %d",
+					    devc->num_frames + 1) != SR_OK)
 					return SR_ERR;
 		}
 		break;
@@ -476,7 +503,7 @@ SR_PRIV int rigol_ds_channel_start(const struct sr_dev_inst *sdi)
 				return SR_ERR;
 		} else {
 			if (sr_scpi_send(sdi->conn, ":WAV:DATA? CHAN%d",
-					ch->index + 1) != SR_OK)
+				    ch->index + 1) != SR_OK)
 				return SR_ERR;
 		}
 		rigol_ds_set_wait_event(devc, WAIT_NONE);
@@ -487,7 +514,7 @@ SR_PRIV int rigol_ds_channel_start(const struct sr_dev_inst *sdi)
 				return SR_ERR;
 		} else {
 			if (rigol_ds_config_set(sdi, ":WAV:SOUR CHAN%d",
-					ch->index + 1) != SR_OK)
+				    ch->index + 1) != SR_OK)
 				return SR_ERR;
 		}
 		if (devc->data_source != DATA_SOURCE_LIVE) {
@@ -501,17 +528,19 @@ SR_PRIV int rigol_ds_channel_start(const struct sr_dev_inst *sdi)
 	case PROTOCOL_V5:
 		if (ch->type == SR_CHANNEL_ANALOG) {
 			if (rigol_ds_config_set(sdi, ":WAV:SOUR CHAN%d",
-					ch->index + 1) != SR_OK)
+				    ch->index + 1) != SR_OK)
 				return SR_ERR;
 		} else {
 			if (rigol_ds_config_set(sdi, ":WAV:SOUR D%d",
-					ch->index) != SR_OK)
+				    ch->index) != SR_OK)
 				return SR_ERR;
 		}
 
-		if (first_frame && rigol_ds_config_set(sdi,
-					devc->data_source == DATA_SOURCE_LIVE ?
-						":WAV:MODE NORM" :":WAV:MODE RAW") != SR_OK)
+		if (first_frame &&
+			rigol_ds_config_set(sdi,
+				devc->data_source == DATA_SOURCE_LIVE
+					? ":WAV:MODE NORM"
+					: ":WAV:MODE RAW") != SR_OK)
 			return SR_ERR;
 
 		if (devc->data_source != DATA_SOURCE_LIVE) {
@@ -522,17 +551,20 @@ SR_PRIV int rigol_ds_channel_start(const struct sr_dev_inst *sdi)
 	}
 
 	if (devc->model->series->protocol >= PROTOCOL_V3 &&
-			ch->type == SR_CHANNEL_ANALOG) {
+		ch->type == SR_CHANNEL_ANALOG) {
 		/* Vertical increment. */
-		if (first_frame && sr_scpi_get_float(sdi->conn, ":WAV:YINC?",
+		if (first_frame &&
+			sr_scpi_get_float(sdi->conn, ":WAV:YINC?",
 				&devc->vert_inc[ch->index]) != SR_OK)
 			return SR_ERR;
 		/* Vertical origin. */
-		if (first_frame && sr_scpi_get_float(sdi->conn, ":WAV:YOR?",
-			&devc->vert_origin[ch->index]) != SR_OK)
+		if (first_frame &&
+			sr_scpi_get_float(sdi->conn, ":WAV:YOR?",
+				&devc->vert_origin[ch->index]) != SR_OK)
 			return SR_ERR;
 		/* Vertical reference. */
-		if (first_frame && sr_scpi_get_int(sdi->conn, ":WAV:YREF?",
+		if (first_frame &&
+			sr_scpi_get_int(sdi->conn, ":WAV:YREF?",
 				&devc->vert_reference[ch->index]) != SR_OK)
 			return SR_ERR;
 	} else if (ch->type == SR_CHANNEL_ANALOG) {
@@ -553,14 +585,14 @@ static int rigol_ds_read_header(struct sr_dev_inst *sdi)
 {
 	struct sr_scpi_dev_inst *scpi = sdi->conn;
 	struct dev_context *devc = sdi->priv;
-	char *buf = (char *) devc->buffer;
+	char *buf = (char *)devc->buffer;
 	size_t header_length;
 	int ret;
 
 	/* Try to read the hashsign and length digit. */
 	if (devc->num_header_bytes < 2) {
 		ret = sr_scpi_read_data(scpi, buf + devc->num_header_bytes,
-				2 - devc->num_header_bytes);
+			2 - devc->num_header_bytes);
 		if (ret < 0) {
 			sr_err("Read error while reading data header.");
 			return SR_ERR;
@@ -572,7 +604,8 @@ static int rigol_ds_read_header(struct sr_dev_inst *sdi)
 		return 0;
 
 	if (buf[0] != '#' || !isdigit(buf[1]) || buf[1] == '0') {
-		sr_err("Received invalid data block header '%c%c'.", buf[0], buf[1]);
+		sr_err("Received invalid data block header '%c%c'.", buf[0],
+			buf[1]);
 		return SR_ERR;
 	}
 
@@ -581,7 +614,7 @@ static int rigol_ds_read_header(struct sr_dev_inst *sdi)
 	/* Try to read the length. */
 	if (devc->num_header_bytes < header_length) {
 		ret = sr_scpi_read_data(scpi, buf + devc->num_header_bytes,
-				header_length - devc->num_header_bytes);
+			header_length - devc->num_header_bytes);
 		if (ret < 0) {
 			sr_err("Read error while reading data header.");
 			return SR_ERR;
@@ -664,15 +697,18 @@ SR_PRIV int rigol_ds_receive(int fd, int revents, void *cb_data)
 
 	ch = devc->channel_entry->data;
 
-	expected_data_bytes = ch->type == SR_CHANNEL_ANALOG ?
-			devc->analog_frame_size : devc->digital_frame_size;
+	expected_data_bytes = ch->type == SR_CHANNEL_ANALOG
+		? devc->analog_frame_size
+		: devc->digital_frame_size;
 
 	if (devc->num_block_bytes == 0) {
 		if (devc->model->series->protocol >= PROTOCOL_V4) {
-			if (first_frame && rigol_ds_config_set(sdi, ":WAV:START %d",
+			if (first_frame &&
+				rigol_ds_config_set(sdi, ":WAV:START %d",
 					devc->num_channel_bytes + 1) != SR_OK)
 				return TRUE;
-			if (first_frame && rigol_ds_config_set(sdi, ":WAV:STOP %d",
+			if (first_frame &&
+				rigol_ds_config_set(sdi, ":WAV:STOP %d",
 					MIN(devc->num_channel_bytes + ACQ_BLOCK_SIZE,
 						devc->analog_frame_size)) != SR_OK)
 				return TRUE;
@@ -706,10 +742,12 @@ SR_PRIV int rigol_ds_receive(int fd, int revents, void *cb_data)
 			 * Discard these, the complete data block will appear
 			 * eventually.
 			 */
-			if (devc->data_source == DATA_SOURCE_LIVE
-					&& (unsigned)len < expected_data_bytes) {
-				sr_dbg("Discarding short data block: got %d/%d bytes\n", len, (int)expected_data_bytes);
-				sr_scpi_read_data(scpi, (char *)devc->buffer, len + 1);
+			if (devc->data_source == DATA_SOURCE_LIVE &&
+				(unsigned)len < expected_data_bytes) {
+				sr_dbg("Discarding short data block: got %d/%d bytes\n",
+					len, (int)expected_data_bytes);
+				sr_scpi_read_data(scpi, (char *)devc->buffer,
+					len + 1);
 				devc->num_header_bytes = 0;
 				return TRUE;
 			}
@@ -745,10 +783,13 @@ SR_PRIV int rigol_ds_receive(int fd, int revents, void *cb_data)
 		offset = devc->vert_offset[ch->index];
 		if (devc->model->series->protocol >= PROTOCOL_V3)
 			for (i = 0; i < len; i++)
-				devc->data[i] = ((int)devc->buffer[i] - vref - origin) * vdiv;
+				devc->data[i] =
+					((int)devc->buffer[i] - vref - origin) *
+					vdiv;
 		else
 			for (i = 0; i < len; i++)
-				devc->data[i] = (128 - devc->buffer[i]) * vdiv - offset;
+				devc->data[i] = (128 - devc->buffer[i]) * vdiv -
+					offset;
 		float vdivlog = log10f(vdiv);
 		int digits = -(int)vdivlog + (vdivlog < 0.0);
 		sr_analog_init(&analog, &encoding, &meaning, &spec, digits);
@@ -765,9 +806,10 @@ SR_PRIV int rigol_ds_receive(int fd, int revents, void *cb_data)
 	} else {
 		logic.length = len;
 		// TODO: For the MSO1000Z series, we need a way to express that
-		// this data is in fact just for a single channel, with the valid
-		// data for that channel in the LSB of each byte.
-		logic.unitsize = devc->model->series->protocol >= PROTOCOL_V4 ? 1 : 2;
+		// this data is in fact just for a single channel, with the
+		// valid data for that channel in the LSB of each byte.
+		logic.unitsize = devc->model->series->protocol >= PROTOCOL_V4 ? 1
+									      : 2;
 		logic.data = devc->buffer;
 		packet.type = SR_DF_LOGIC;
 		packet.payload = &logic;
@@ -815,7 +857,8 @@ SR_PRIV int rigol_ds_receive(int fd, int revents, void *cb_data)
 	}
 
 	if (devc->channel_entry->next) {
-		/* We got the frame for this channel, now get the next channel. */
+		/* We got the frame for this channel, now get the next channel.
+		 */
 		devc->channel_entry = devc->channel_entry->next;
 		rigol_ds_channel_start(sdi);
 	} else {
@@ -824,13 +867,14 @@ SR_PRIV int rigol_ds_receive(int fd, int revents, void *cb_data)
 
 		devc->num_frames++;
 
-		/* V5 has no way to read the number of recorded frames, so try to set the
-		 * next frame and read it back instead.
+		/* V5 has no way to read the number of recorded frames, so try
+		 * to set the next frame and read it back instead.
 		 */
 		if (devc->data_source == DATA_SOURCE_SEGMENTED &&
-				devc->model->series->protocol == PROTOCOL_V5) {
+			devc->model->series->protocol == PROTOCOL_V5) {
 			int frames = 0;
-			if (rigol_ds_config_set(sdi, "REC:CURR %d", devc->num_frames + 1) != SR_OK)
+			if (rigol_ds_config_set(sdi, "REC:CURR %d",
+				    devc->num_frames + 1) != SR_OK)
 				return SR_ERR;
 			if (sr_scpi_get_int(sdi->conn, "REC:CURR?", &frames) != SR_OK)
 				return SR_ERR;
@@ -838,12 +882,13 @@ SR_PRIV int rigol_ds_receive(int fd, int revents, void *cb_data)
 		}
 
 		if (devc->num_frames == devc->limit_frames ||
-				devc->num_frames == devc->num_frames_segmented ||
-				devc->data_source == DATA_SOURCE_MEMORY) {
+			devc->num_frames == devc->num_frames_segmented ||
+			devc->data_source == DATA_SOURCE_MEMORY) {
 			/* Last frame, stop capture. */
 			sr_dev_acquisition_stop(sdi);
 		} else {
-			/* Get the next frame, starting with the first channel. */
+			/* Get the next frame, starting with the first channel.
+			 */
 			devc->channel_entry = devc->enabled_channels;
 
 			rigol_ds_capture_start(sdi);
@@ -883,12 +928,13 @@ SR_PRIV int rigol_ds_get_dev_cfg(const struct sr_dev_inst *sdi)
 	/* Digital channel state. */
 	if (devc->model->has_digital) {
 		if (sr_scpi_get_bool(sdi->conn,
-				devc->model->series->protocol >= PROTOCOL_V3 ?
-					":LA:STAT?" : ":LA:DISP?",
-				&devc->la_enabled) != SR_OK)
+			    devc->model->series->protocol >= PROTOCOL_V3
+				    ? ":LA:STAT?"
+				    : ":LA:DISP?",
+			    &devc->la_enabled) != SR_OK)
 			return SR_ERR;
 		sr_dbg("Logic analyzer %s, current digital channel state:",
-				devc->la_enabled ? "enabled" : "disabled");
+			devc->la_enabled ? "enabled" : "disabled");
 		for (i = 0; i < ARRAY_SIZE(devc->digital_channels); i++) {
 			if (devc->model->series->protocol >= PROTOCOL_V5)
 				cmd = g_strdup_printf(":LA:DISP? D%d", i);
@@ -896,13 +942,16 @@ SR_PRIV int rigol_ds_get_dev_cfg(const struct sr_dev_inst *sdi)
 				cmd = g_strdup_printf(":LA:DIG%d:DISP?", i);
 			else
 				cmd = g_strdup_printf(":DIG%d:TURN?", i);
-			res = sr_scpi_get_bool(sdi->conn, cmd, &devc->digital_channels[i]);
+			res = sr_scpi_get_bool(sdi->conn, cmd,
+				&devc->digital_channels[i]);
 			g_free(cmd);
 			if (res != SR_OK)
 				return SR_ERR;
-			ch = g_slist_nth_data(sdi->channels, i + devc->model->analog_channels);
+			ch = g_slist_nth_data(sdi->channels,
+				i + devc->model->analog_channels);
 			ch->enabled = devc->digital_channels[i];
-			sr_dbg("D%d: %s", i, devc->digital_channels[i] ? "on" : "off");
+			sr_dbg("D%d: %s", i,
+				devc->digital_channels[i] ? "on" : "off");
 		}
 	}
 
@@ -924,8 +973,8 @@ SR_PRIV int rigol_ds_get_dev_cfg(const struct sr_dev_inst *sdi)
 			return SR_ERR;
 
 		int len = strlen(response);
-		if (response[len-1] == 'X')
-			response[len-1] = 0;
+		if (response[len - 1] == 'X')
+			response[len - 1] = 0;
 
 		res = sr_atof_ascii(response, &devc->attenuation[i]);
 		g_free(response);
@@ -958,25 +1007,29 @@ SR_PRIV int rigol_ds_get_dev_cfg(const struct sr_dev_inst *sdi)
 	/* Trigger source. */
 	g_free(devc->trigger_source);
 	devc->trigger_source = NULL;
-	if (sr_scpi_get_string(sdi->conn, ":TRIG:EDGE:SOUR?", &devc->trigger_source) != SR_OK)
+	if (sr_scpi_get_string(sdi->conn, ":TRIG:EDGE:SOUR?",
+		    &devc->trigger_source) != SR_OK)
 		return SR_ERR;
 	sr_dbg("Current trigger source %s", devc->trigger_source);
 
 	/* Horizontal trigger position. */
-	if (sr_scpi_get_float(sdi->conn, devc->model->cmds[CMD_GET_HORIZ_TRIGGERPOS].str,
-			&devc->horiz_triggerpos) != SR_OK)
+	if (sr_scpi_get_float(sdi->conn,
+		    devc->model->cmds[CMD_GET_HORIZ_TRIGGERPOS].str,
+		    &devc->horiz_triggerpos) != SR_OK)
 		return SR_ERR;
 	sr_dbg("Current horizontal trigger position %g", devc->horiz_triggerpos);
 
 	/* Trigger slope. */
 	g_free(devc->trigger_slope);
 	devc->trigger_slope = NULL;
-	if (sr_scpi_get_string(sdi->conn, ":TRIG:EDGE:SLOP?", &devc->trigger_slope) != SR_OK)
+	if (sr_scpi_get_string(sdi->conn, ":TRIG:EDGE:SLOP?",
+		    &devc->trigger_slope) != SR_OK)
 		return SR_ERR;
 	sr_dbg("Current trigger slope %s", devc->trigger_slope);
 
 	/* Trigger level. */
-	if (sr_scpi_get_float(sdi->conn, ":TRIG:EDGE:LEV?", &devc->trigger_level) != SR_OK)
+	if (sr_scpi_get_float(sdi->conn, ":TRIG:EDGE:LEV?",
+		    &devc->trigger_level) != SR_OK)
 		return SR_ERR;
 	sr_dbg("Current trigger level %g", devc->trigger_level);
 
