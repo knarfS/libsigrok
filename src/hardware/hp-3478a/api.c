@@ -42,11 +42,11 @@ static const struct {
 	enum sr_mq mq;
 	enum sr_mqflag mqflag;
 } mqopts[] = {
-	{SR_MQ_VOLTAGE, SR_MQFLAG_DC},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_AC},
-	{SR_MQ_CURRENT, SR_MQFLAG_DC},
-	{SR_MQ_CURRENT, SR_MQFLAG_AC},
-	{SR_MQ_RESISTANCE, 0},
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_DC       },
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_AC       },
+	{SR_MQ_CURRENT,    SR_MQFLAG_DC       },
+	{SR_MQ_CURRENT,    SR_MQFLAG_AC       },
+	{SR_MQ_RESISTANCE, 0                  },
 	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE},
 };
 
@@ -56,45 +56,45 @@ static const struct {
 	int range_exp;
 	const char *range_str;
 } rangeopts[] = {
-	/* -99 is a dummy exponent for auto ranging. */
-	{SR_MQ_VOLTAGE, SR_MQFLAG_DC, -99, "Auto"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_DC, -2, "30mV"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_DC, -1, "300mV"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_DC, 0, "3V"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_DC, 1, "30V"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_DC, 2, "300V"},
-	/* -99 is a dummy exponent for auto ranging. */
-	{SR_MQ_VOLTAGE, SR_MQFLAG_AC, -99, "Auto"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_AC, -1, "300mV"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_AC, 0, "3V"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_AC, 1, "30V"},
-	{SR_MQ_VOLTAGE, SR_MQFLAG_AC, 2, "300V"},
-	/* -99 is a dummy exponent for auto ranging. */
-	{SR_MQ_CURRENT, SR_MQFLAG_DC, -99, "Auto"},
-	{SR_MQ_CURRENT, SR_MQFLAG_DC, -1, "300mA"},
-	{SR_MQ_CURRENT, SR_MQFLAG_DC, 0, "3A"},
-	/* -99 is a dummy exponent for auto ranging. */
-	{SR_MQ_CURRENT, SR_MQFLAG_AC, -99, "Auto"},
-	{SR_MQ_CURRENT, SR_MQFLAG_AC, -1, "300mA"},
-	{SR_MQ_CURRENT, SR_MQFLAG_AC, 0, "3A"},
-	/* -99 is a dummy exponent for auto ranging. */
-	{SR_MQ_RESISTANCE, 0, -99, "Auto"},
-	{SR_MQ_RESISTANCE, 0, 1, "30R"},
-	{SR_MQ_RESISTANCE, 0, 2, "300R"},
-	{SR_MQ_RESISTANCE, 0, 3, "3kR"},
-	{SR_MQ_RESISTANCE, 0, 4, "30kR"},
-	{SR_MQ_RESISTANCE, 0, 5, "300kR"},
-	{SR_MQ_RESISTANCE, 0, 6, "3MR"},
-	{SR_MQ_RESISTANCE, 0, 7, "30MR"},
-	/* -99 is a dummy exponent for auto ranging. */
-	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, -99, "Auto"},
-	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 1, "30R"},
-	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 2, "300R"},
-	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 3, "3kR"},
-	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 4, "30kR"},
-	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 5, "300kR"},
-	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 6, "3MR"},
-	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 7, "30MR"},
+  /* -99 is a dummy exponent for auto ranging. */
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_DC,        -99, "Auto" },
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_DC,        -2,  "30mV" },
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_DC,        -1,  "300mV"},
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_DC,        0,   "3V"   },
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_DC,        1,   "30V"  },
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_DC,        2,   "300V" },
+ /* -99 is a dummy exponent for auto ranging. */
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_AC,        -99, "Auto" },
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_AC,        -1,  "300mV"},
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_AC,        0,   "3V"   },
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_AC,        1,   "30V"  },
+	{SR_MQ_VOLTAGE,    SR_MQFLAG_AC,        2,   "300V" },
+ /* -99 is a dummy exponent for auto ranging. */
+	{SR_MQ_CURRENT,    SR_MQFLAG_DC,        -99, "Auto" },
+	{SR_MQ_CURRENT,    SR_MQFLAG_DC,        -1,  "300mA"},
+	{SR_MQ_CURRENT,    SR_MQFLAG_DC,        0,   "3A"   },
+ /* -99 is a dummy exponent for auto ranging. */
+	{SR_MQ_CURRENT,    SR_MQFLAG_AC,        -99, "Auto" },
+	{SR_MQ_CURRENT,    SR_MQFLAG_AC,        -1,  "300mA"},
+	{SR_MQ_CURRENT,    SR_MQFLAG_AC,        0,   "3A"   },
+ /* -99 is a dummy exponent for auto ranging. */
+	{SR_MQ_RESISTANCE, 0,                   -99, "Auto" },
+	{SR_MQ_RESISTANCE, 0,                   1,   "30R"  },
+	{SR_MQ_RESISTANCE, 0,                   2,   "300R" },
+	{SR_MQ_RESISTANCE, 0,                   3,   "3kR"  },
+	{SR_MQ_RESISTANCE, 0,                   4,   "30kR" },
+	{SR_MQ_RESISTANCE, 0,                   5,   "300kR"},
+	{SR_MQ_RESISTANCE, 0,                   6,   "3MR"  },
+	{SR_MQ_RESISTANCE, 0,                   7,   "30MR" },
+ /* -99 is a dummy exponent for auto ranging. */
+	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, -99, "Auto" },
+	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 1,   "30R"  },
+	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 2,   "300R" },
+	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 3,   "3kR"  },
+	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 4,   "30kR" },
+	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 5,   "300kR"},
+	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 6,   "3MR"  },
+	{SR_MQ_RESISTANCE, SR_MQFLAG_FOUR_WIRE, 7,   "30MR" },
 };
 
 /** Available digits as strings. */
