@@ -25,6 +25,21 @@ Contributions
 
    https://lists.sourceforge.net/lists/listinfo/sigrok-devel
 
+ - Use the provided .clang-format file to check your coding style. These are
+   very strong suggestions you should stick to and deviate from only if it
+   increases readability (e.g. for alignment of structs inside arrays or the
+   80 character line limit).
+
+   Format only code you have changed or added, do not format legacy code!
+   You can use `git clang-format` (or the git-clang-format script) to format
+   your changes. To format staged changes:
+
+    $ git clang-format
+
+   To format commits:
+
+    $ git clang-format <commit hash your commits are based on>
+
 
 Adding a new hardware driver
 ----------------------------
