@@ -1,0 +1,24 @@
+name: libsigrok Upstream Sync
+
+on:
+  schedule:
+  - cron:  "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  repo-sync:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout origin
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+    - name: Sync with upstream
+      uses: repo-sync/github-sync@v2
+      with:
+        source_repo: "git://sigrok.org/libsigrok"
+        source_branch: "master"
+        destination_branch: "github-sync"
+        sync_tags: "true"
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
