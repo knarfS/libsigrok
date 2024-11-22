@@ -34,7 +34,7 @@
 
 struct dev_context {
 	struct sr_sw_limits limits;
-	GMutex rw_mutex;
+	//GMutex rw_mutex;
 	float current_limit;
 	float uvc_threshold;
 	gboolean running;
