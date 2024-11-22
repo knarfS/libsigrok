@@ -390,9 +390,9 @@ SR_PRIV int ebd_get_current_limit(const struct sr_dev_inst *sdi, float *current)
 	if (!(devc = sdi->priv))
 		return SR_ERR;
 
-	g_mutex_lock(&devc->rw_mutex);
+	// g_mutex_lock(&devc->rw_mutex);
 	*current = devc->current_limit;
-	g_mutex_unlock(&devc->rw_mutex);
+	// g_mutex_unlock(&devc->rw_mutex);
 
 	return SR_OK;
 }
@@ -405,12 +405,12 @@ SR_PRIV int ebd_set_current_limit(const struct sr_dev_inst *sdi, float current)
 	if (!(devc = sdi->priv))
 		return SR_ERR;
 
-	g_mutex_lock(&devc->rw_mutex);
+	// g_mutex_lock(&devc->rw_mutex);
 	devc->current_limit = current;
 
 	if (!devc->running) {
 		sr_dbg("Setting current limit later.");
-		g_mutex_unlock(&devc->rw_mutex);
+		// g_mutex_unlock(&devc->rw_mutex);
 		return SR_OK;
 	}
 
@@ -434,7 +434,7 @@ SR_PRIV int ebd_set_current_limit(const struct sr_dev_inst *sdi, float current)
 		}
 	}
 
-	g_mutex_unlock(&devc->rw_mutex);
+	// g_mutex_unlock(&devc->rw_mutex);
 
 	return ret;
 }
@@ -446,9 +446,9 @@ SR_PRIV int ebd_get_uvc_threshold(const struct sr_dev_inst *sdi, float *voltage)
 	if (!(devc = sdi->priv))
 		return SR_ERR;
 
-	g_mutex_lock(&devc->rw_mutex);
+	// g_mutex_lock(&devc->rw_mutex);
 	*voltage = devc->uvc_threshold;
-	g_mutex_unlock(&devc->rw_mutex);
+	// g_mutex_unlock(&devc->rw_mutex);
 
 	return SR_OK;
 }
@@ -461,12 +461,12 @@ SR_PRIV int ebd_set_uvc_threshold(const struct sr_dev_inst *sdi, float voltage)
 	if (!(devc = sdi->priv))
 		return SR_ERR;
 
-	g_mutex_lock(&devc->rw_mutex);
+	// g_mutex_lock(&devc->rw_mutex);
 	devc->uvc_threshold = voltage;
 
 	if (!devc->running) {
 		sr_dbg("Setting uvc threshold later.");
-		g_mutex_unlock(&devc->rw_mutex);
+		// g_mutex_unlock(&devc->rw_mutex);
 		return SR_OK;
 	}
 
@@ -490,7 +490,7 @@ SR_PRIV int ebd_set_uvc_threshold(const struct sr_dev_inst *sdi, float voltage)
 		}
 	}
 
-	g_mutex_unlock(&devc->rw_mutex);
+	// g_mutex_unlock(&devc->rw_mutex);
 
 	return ret;
 }

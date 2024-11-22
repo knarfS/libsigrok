@@ -84,7 +84,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	sr_channel_new(sdi, 3, SR_CHANNEL_ANALOG, TRUE, "V.D-");
 
 	devc = g_malloc0(sizeof(struct dev_context));
-	g_mutex_init(&devc->rw_mutex);
+	// g_mutex_init(&devc->rw_mutex);
 	devc->current_limit = 0;
 	devc->uvc_threshold = 0;
 	devc->running = FALSE;
@@ -114,11 +114,11 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 
 static int dev_close(struct sr_dev_inst *sdi)
 {
-	struct dev_context *devc;
+	// struct dev_context *devc;
 
-	devc = (sdi) ? sdi->priv : NULL;
-	if (devc)
-		g_mutex_clear(&devc->rw_mutex);
+	// devc = (sdi) ? sdi->priv : NULL;
+	// if (devc)
+	// 	g_mutex_clear(&devc->rw_mutex);
 
 	return std_serial_dev_close(sdi);
 }
