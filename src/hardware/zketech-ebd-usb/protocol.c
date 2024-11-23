@@ -414,7 +414,7 @@ SR_PRIV int ebd_set_current_limit(const struct sr_dev_inst *sdi, float current)
 		return SR_OK;
 	}
 
-	sr_dbg("Setting current limit to %fV.", current);
+	sr_dbg("Setting current limit to %fA.", current);
 
 	if (devc->load_activated) {
 		if (ebd_current_is0(devc)) {
