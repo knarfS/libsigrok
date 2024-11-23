@@ -503,6 +503,7 @@ SR_PRIV int usb_source_add(struct sr_session *session, struct sr_context *ctx,
 	if (!source)
 		return SR_ERR;
 
+	// TODO: Add callback wrapper here?
 	g_source_set_callback(source, G_SOURCE_FUNC(cb), cb_data, NULL);
 
 	ret = sr_session_source_add_internal(session, ctx->libusb_ctx, source);

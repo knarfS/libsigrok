@@ -838,7 +838,14 @@ SR_API int sr_config_get(const struct sr_dev_driver *driver,
 		return SR_ERR;
 	}
 
-	if ((ret = driver->config_get(key, data, sdi, cg)) == SR_OK) {
+	if (!sdi->disable_default_mutex) {
+		g_mutex_lock((GMutex *)&sdi->rw_mutex);
+		ret = driver->config_get(key, data, sdi, cg);
+		g_mutex_unlock((GMutex *)&sdi->rw_mutex);
+	} else {
+		ret = sdi->driver->config_get(key, data, sdi, cg);
+	}
+	if (ret == SR_OK) {
 		log_key(sdi, cg, key, SR_CONF_GET, *data);
 		/* Got a floating reference from the driver. Sink it here,
 		 * caller will need to unref when done with it. */
@@ -892,7 +899,13 @@ SR_API int sr_config_set(const struct sr_dev_inst *sdi,
 		return SR_ERR_ARG;
 	else if ((ret = sr_variant_type_check(key, data)) == SR_OK) {
 		log_key(sdi, cg, key, SR_CONF_SET, data);
-		ret = sdi->driver->config_set(key, data, sdi, cg);
+		if (!sdi->disable_default_mutex) {
+			g_mutex_lock((GMutex *)&sdi->rw_mutex);
+			ret = sdi->driver->config_set(key, data, sdi, cg);
+			g_mutex_unlock((GMutex *)&sdi->rw_mutex);
+		} else {
+			ret = sdi->driver->config_set(key, data, sdi, cg);
+		}
 	}
 
 	g_variant_unref(data);

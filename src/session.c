@@ -351,6 +351,8 @@ SR_API int sr_session_dev_add(struct sr_session *session,
 		return SR_ERR_BUG;
 	}
 
+	g_mutex_init(&sdi->rw_mutex);
+
 	session->devs = g_slist_append(session->devs, sdi);
 	sdi->session = session;
 
@@ -440,6 +442,8 @@ SR_API int sr_session_dev_remove(struct sr_session *session,
 
 	session->devs = g_slist_remove(session->devs, sdi);
 	sdi->session = NULL;
+
+	g_mutex_clear(&sdi->rw_mutex);
 
 	return SR_OK;
 }
@@ -1190,6 +1194,25 @@ SR_PRIV int sr_session_send(const struct sr_dev_inst *sdi,
 	return SR_OK;
 }
 
+SR_PRIV int sr_receive_data_callback_wrapper(int fd, int revents, void *cb_wrapper_data)
+{
+	struct sr_cb_wrapper_data *cbwd;
+	struct sr_dev_inst *sdi;
+	int ret;
+
+	if (!(cbwd = cb_wrapper_data))
+		return FALSE;
+
+	if (!(sdi = cbwd->sdi))
+		return FALSE;
+
+	g_mutex_lock(&sdi->rw_mutex);
+	ret = cbwd->cb(fd, revents, sdi);
+	g_mutex_unlock(&sdi->rw_mutex);
+
+	return ret;
+}
+
 /**
  * Add an event source for a file descriptor.
  *
@@ -1230,14 +1253,26 @@ SR_PRIV int sr_session_fd_source_add(struct sr_session *session,
 		void *key, gintptr fd, int events, int timeout,
 		sr_receive_data_callback cb, void *cb_data)
 {
+	struct sr_dev_inst *sdi;
 	GSource *source;
+	struct sr_cb_wrapper_data *cbwd;
 	int ret;
+
+	if (!(sdi = cb_data))
+		return SR_ERR;
 
 	source = fd_source_new(session, key, fd, events, timeout);
 	if (!source)
 		return SR_ERR;
 
-	g_source_set_callback(source, G_SOURCE_FUNC(cb), cb_data, NULL);
+	if (!sdi->disable_default_mutex) {
+		cbwd = g_malloc(sizeof(struct sr_cb_wrapper_data));
+		cbwd->sdi = cb_data;
+		cbwd->cb = cb;
+		g_source_set_callback(source, G_SOURCE_FUNC(sr_receive_data_callback_wrapper), cbwd, NULL);
+	} else {
+		g_source_set_callback(source, G_SOURCE_FUNC(cb), cb_data, NULL);
+	}
 
 	ret = sr_session_source_add_internal(session, key, source);
 	g_source_unref(source);

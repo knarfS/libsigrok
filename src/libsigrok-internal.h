@@ -1758,6 +1758,13 @@ struct sr_dev_inst {
 	void *priv;
 	/** Session to which this device is currently assigned. */
 	struct sr_session *session;
+	/** Mutex for hardware read and write operations */
+	GMutex rw_mutex;
+	/**
+	 * Disable default implementation for synchronizing hardware read and write
+	 * operations
+	 */
+	gboolean disable_default_mutex;
 };
 
 /* Generic device instances */
@@ -1850,6 +1857,13 @@ struct sr_session {
 	gboolean running;
 };
 
+struct sr_cb_wrapper_data {
+	struct sr_dev_inst *sdi;
+	sr_receive_data_callback cb;
+};
+
+SR_PRIV int sr_receive_data_callback_wrapper(int fd, int revents,
+		void *cb_wrapper_data);
 SR_PRIV int sr_session_source_add_internal(struct sr_session *session,
 		void *key, GSource *source);
 SR_PRIV int sr_session_source_remove_internal(struct sr_session *session,
