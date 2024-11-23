@@ -1758,6 +1758,8 @@ struct sr_dev_inst {
 	void *priv;
 	/** Session to which this device is currently assigned. */
 	struct sr_session *session;
+	/* Command queue for this device */
+	struct sr_cmd_queue *cmd_queue;
 };
 
 /* Generic device instances */
@@ -1815,6 +1817,44 @@ SR_PRIV struct sr_config *sr_config_new(uint32_t key, GVariant *data);
 SR_PRIV void sr_config_free(struct sr_config *src);
 SR_PRIV int sr_dev_acquisition_start(struct sr_dev_inst *sdi);
 SR_PRIV int sr_dev_acquisition_stop(struct sr_dev_inst *sdi);
+SR_PRIV int sr_dev_config_set(const struct sr_dev_inst *sdi,
+		const struct sr_channel_group *cg,
+		uint32_t key, GVariant *data);
+SR_PRIV int sr_dev_config_get(const struct sr_dev_inst *sdi,
+		const struct sr_channel_group *cg,
+		uint32_t key, GVariant **data);
+
+/*--- command-queue.c -------------------------------------------------------*/
+
+/* Command types that can be queued */
+enum sr_cmd_type {
+    SR_CMD_CONFIG_SET,
+    SR_CMD_CONFIG_GET,
+    SR_CMD_CONFIG_LIST
+};
+
+/* Structure for queued commands */
+struct sr_cmd_queue_item {
+    enum sr_cmd_type type;
+    uint32_t key;
+    GVariant *set_config_data;
+    GVariant **get_config_data;
+    const struct sr_channel_group *cg;
+    int ret;
+};
+
+/* Main queue structure */
+struct sr_cmd_queue {
+    GQueue *queue;
+    GMutex mutex;
+    GCond command_processed;
+    gboolean is_processing;
+    struct sr_dev_inst *sdi;
+};
+
+SR_PRIV struct sr_cmd_queue *sr_cmd_queue_new(struct sr_dev_inst *sdi);
+SR_PRIV void sr_cmd_queue_free(struct sr_cmd_queue *queue);
+SR_PRIV gboolean sr_cmd_queue_process(gpointer user_data);
 
 /*--- session.c -------------------------------------------------------------*/
 

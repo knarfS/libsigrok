@@ -60,6 +60,7 @@ libsigrok_la_SOURCES = \
 	src/session.c \
 	src/session_file.c \
 	src/session_driver.c \
+	src/command-queue.c \
 	src/hwdriver.c \
 	src/trigger.c \
 	src/soft-trigger.c \

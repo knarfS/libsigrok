@@ -673,6 +673,17 @@ SR_PRIV int sr_dev_acquisition_start(struct sr_dev_inst *sdi)
 
 	sr_dbg("%s: Starting acquisition.", sdi->driver->name);
 
+	/* Initialize command queue */
+	sdi->cmd_queue = sr_cmd_queue_new(sdi);
+
+	/* Add queue processor to main context */
+	GSource *queue_source = g_timeout_source_new(0);
+	g_source_set_callback(queue_source, G_SOURCE_FUNC(sr_cmd_queue_process),
+		sdi->cmd_queue, NULL);
+	g_mutex_lock(&sdi->session->main_mutex);
+	g_source_attach(queue_source, sdi->session->main_context);
+	g_mutex_unlock(&sdi->session->main_mutex);
+
 	return sdi->driver->dev_acquisition_start(sdi);
 }
 
@@ -691,6 +702,12 @@ SR_PRIV int sr_dev_acquisition_stop(struct sr_dev_inst *sdi)
 	}
 
 	sr_dbg("%s: Stopping acquisition.", sdi->driver->name);
+
+
+	if (sdi->cmd_queue) {
+		sr_cmd_queue_free(sdi->cmd_queue);
+		sdi->cmd_queue = NULL;
+	}
 
 	return sdi->driver->dev_acquisition_stop(sdi);
 }
@@ -838,7 +855,8 @@ SR_API int sr_config_get(const struct sr_dev_driver *driver,
 		return SR_ERR;
 	}
 
-	if ((ret = driver->config_get(key, data, sdi, cg)) == SR_OK) {
+	//if ((ret = driver->config_get(key, data, sdi, cg)) == SR_OK) {
+	if ((ret = sr_dev_config_get(sdi, cg, key, data)) == SR_OK) {
 		log_key(sdi, cg, key, SR_CONF_GET, *data);
 		/* Got a floating reference from the driver. Sink it here,
 		 * caller will need to unref when done with it. */
@@ -848,6 +866,34 @@ SR_API int sr_config_get(const struct sr_dev_driver *driver,
 	if (ret == SR_ERR_CHANNEL_GROUP)
 		sr_err("%s: No channel group specified.",
 			(sdi) ? sdi->driver->name : "unknown");
+
+	return ret;
+}
+
+SR_PRIV int sr_dev_config_get(const struct sr_dev_inst *sdi,
+		const struct sr_channel_group *cg,
+		uint32_t key, GVariant **data)
+{
+	struct sr_cmd_queue_item *item;
+	int ret;
+
+	if (!sdi || !sdi->cmd_queue)
+		return SR_ERR;
+
+	item = g_malloc0(sizeof(struct sr_cmd_queue_item));
+	item->type = SR_CMD_CONFIG_GET;
+	item->key = key;
+	item->get_config_data = data;
+	item->cg = cg;
+
+	g_mutex_lock(&sdi->cmd_queue->mutex);
+	g_queue_push_tail(sdi->cmd_queue->queue, item);
+
+	g_cond_wait(&sdi->cmd_queue->command_processed,
+		&sdi->cmd_queue->mutex);
+
+	ret = item->ret;
+	g_mutex_unlock(&sdi->cmd_queue->mutex);
 
 	return ret;
 }
@@ -892,7 +938,8 @@ SR_API int sr_config_set(const struct sr_dev_inst *sdi,
 		return SR_ERR_ARG;
 	else if ((ret = sr_variant_type_check(key, data)) == SR_OK) {
 		log_key(sdi, cg, key, SR_CONF_SET, data);
-		ret = sdi->driver->config_set(key, data, sdi, cg);
+		//ret = sdi->driver->config_set(key, data, sdi, cg);
+		ret = sr_dev_config_set(sdi, cg, key, data);
 	}
 
 	g_variant_unref(data);
@@ -900,6 +947,34 @@ SR_API int sr_config_set(const struct sr_dev_inst *sdi,
 	if (ret == SR_ERR_CHANNEL_GROUP)
 		sr_err("%s: No channel group specified.",
 			(sdi) ? sdi->driver->name : "unknown");
+
+	return ret;
+}
+
+SR_PRIV int sr_dev_config_set(const struct sr_dev_inst *sdi,
+		const struct sr_channel_group *cg,
+		uint32_t key, GVariant *data)
+{
+	struct sr_cmd_queue_item *item;
+	int ret;
+
+	if (!sdi || !sdi->cmd_queue)
+		return SR_ERR;
+
+	item = g_malloc0(sizeof(struct sr_cmd_queue_item));
+	item->type = SR_CMD_CONFIG_SET;
+	item->key = key;
+	item->set_config_data = data;
+	item->cg = cg;
+
+	g_mutex_lock(&sdi->cmd_queue->mutex);
+	g_queue_push_tail(sdi->cmd_queue->queue, item);
+
+	g_cond_wait(&sdi->cmd_queue->command_processed,
+		&sdi->cmd_queue->mutex);
+
+	ret = item->ret;
+	g_mutex_unlock(&sdi->cmd_queue->mutex);
 
 	return ret;
 }

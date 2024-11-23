@@ -149,6 +149,23 @@ static void fd_source_finalize(GSource *source)
 	sr_session_source_destroyed(fsource->session, fsource->key, source);
 }
 
+static unsigned int session_source_attach(struct sr_session *session,
+		GSource *source)
+{
+	unsigned int id = 0;
+
+	g_mutex_lock(&session->main_mutex);
+
+	if (session->main_context)
+		id = g_source_attach(source, session->main_context);
+	else
+		sr_err("Cannot add event source without main context.");
+
+	g_mutex_unlock(&session->main_mutex);
+
+	return id;
+}
+
 /** Create an event source for I/O on a file descriptor.
  *
  * In order to maintain API compatibility, this event source also doubles
@@ -438,6 +455,11 @@ SR_API int sr_session_dev_remove(struct sr_session *session,
 		return SR_ERR_ARG;
 	}
 
+	// if (sdi->cmd_queue) {
+	// 	sr_cmd_queue_free(sdi->cmd_queue);
+	// 	sdi->cmd_queue = NULL;
+	// }
+
 	session->devs = g_slist_remove(session->devs, sdi);
 	sdi->session = NULL;
 
@@ -654,23 +676,6 @@ static int unset_main_context(struct sr_session *session)
 	return ret;
 }
 
-static unsigned int session_source_attach(struct sr_session *session,
-		GSource *source)
-{
-	unsigned int id = 0;
-
-	g_mutex_lock(&session->main_mutex);
-
-	if (session->main_context)
-		id = g_source_attach(source, session->main_context);
-	else
-		sr_err("Cannot add event source without main context.");
-
-	g_mutex_unlock(&session->main_mutex);
-
-	return id;
-}
-
 /* Idle handler; invoked when the number of registered event sources
  * for a running session drops to zero.
  */
@@ -817,6 +822,7 @@ SR_API int sr_session_start(struct sr_session *session)
 			ret = SR_ERR;
 			break;
 		}
+
 		ret = sr_dev_acquisition_start(sdi);
 		if (ret != SR_OK) {
 			sr_err("Could not start %s device %s acquisition.",
@@ -965,6 +971,7 @@ SR_API int sr_session_stop(struct sr_session *session)
 		/* Not an error; as it would be racy. */
 		return SR_OK;
 	}
+
 	g_main_context_invoke(main_context, &session_stop_sync, session);
 	g_main_context_unref(main_context);
 
