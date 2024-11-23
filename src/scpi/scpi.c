@@ -126,9 +126,10 @@ static struct sr_dev_inst *sr_scpi_scan_resource(struct drv_context *drvc,
 
 	sr_scpi_close(scpi);
 
-	if (sdi)
+	if (sdi) {
 		sdi->status = SR_ST_INACTIVE;
-	else
+		sdi->disable_default_mutex = TRUE;
+	} else
 		sr_scpi_free(scpi);
 
 	return sdi;
