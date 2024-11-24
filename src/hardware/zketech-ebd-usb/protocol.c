@@ -280,8 +280,10 @@ SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data)
 	int ret, i;
 	uint8_t checksum;
 
-	(void)revents;
 	(void)fd;
+
+	if (revents != G_IO_IN)
+		return G_SOURCE_CONTINUE;
 
 	if (!(sdi = cb_data))
 		return FALSE;
