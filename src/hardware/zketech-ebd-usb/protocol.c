@@ -136,12 +136,13 @@ SR_PRIV int ebd_loadtoggle(struct sr_serial_dev_inst *serial,
 }
 
 /* Stop the drive. */
-SR_PRIV int ebd_stop(struct sr_serial_dev_inst *serial, struct dev_context *devc)
+SR_PRIV int ebd_loadstop(struct sr_serial_dev_inst *serial, struct dev_context *devc)
 {
 	uint8_t stop[] = { 0xfa, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0xF8 };
 
 	(void)devc;
 
+	sr_info("Stopping load");
 	return send_cmd(serial, stop, 10);
 }
 
@@ -274,6 +275,7 @@ SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data)
 	struct sr_dev_inst *sdi;
 	struct dev_context *devc;
 	struct sr_serial_dev_inst *serial;
+	gboolean enabled;
 	float current, current_limit;
 	float voltage, voltage_dp, voltage_dm, uvc_threshold;
 	uint8_t reply[MSG_MAX_LEN];
@@ -292,8 +294,6 @@ SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data)
 		return FALSE;
 
 	serial = sdi->conn;
-	current_limit = devc->current_limit;
-	uvc_threshold = devc->uvc_threshold;
 
 	ret = ebd_read_message(serial, MSG_MAX_LEN, reply);
 
@@ -303,7 +303,6 @@ SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data)
 		return SR_ERR;
 	} else if (ret == 0) {
 		sr_err("No messages received");
-		devc->running = FALSE;
 		return 0;
 	} else if ((ret != 19) ||
 		((reply[1] != 0x00) && (reply[1] != 0x0a) && (reply[1] != 0x64) && (reply[1] != 0x6e))) {
@@ -323,18 +322,38 @@ SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data)
 		return ret;
 	}
 
-	devc->running = TRUE;
+
+	switch (reply[1]) {
+	case 0x00:
+		sr_err("ebd_receive_data(): 0x00 - measurement without load");
+		break;
+	case 0x0a:
+		sr_err("ebd_receive_data(): 0x0a - measurement with load");
+		break;
+	case 0x64:
+		sr_err("ebd_receive_data(): 0x64 - device measurement without load");
+		break;
+	case 0x6e:
+		sr_err("ebd_receive_data(): 0x6e - device measurement without load");
+		break;
+	default:
+		sr_err("ebd_receive_data(): %u - unknown", reply[1]);
+		break;
+	}
+
 	if ((reply[1] == 0x00) || (reply[1] == 0x64))
-		devc->load_activated = FALSE;
+		enabled = FALSE;
 	else if ((reply[1] == 0x0a) || (reply[1] == 0x6e))
-		devc->load_activated = TRUE;
+		enabled = TRUE;
+	else
+		enabled = FALSE;
 
 	/* Calculate values. */
 	current = decode_value(reply[2], reply[3], 10000.0);
 	voltage = decode_value(reply[4], reply[5], 1000.0);
 	voltage_dp = decode_value(reply[6], reply[7], 1000.0);
 	voltage_dm = decode_value(reply[8], reply[9], 1000.0);
-	if (reply[1] == 0x0a) {
+	if (reply[1] == 0x0a || (reply[1] == 0x6e)) {
 		current_limit = decode_value(reply[10], reply[11], 1000.0);
 		uvc_threshold = decode_value(reply[12], reply[13], 100.0);
 	}
@@ -343,23 +362,9 @@ SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data)
 	sr_dbg("VBUS voltage %.03f V", voltage);
 	sr_dbg("D+ voltage %.03f V", voltage_dp);
 	sr_dbg("D- voltage %.03f V", voltage_dm);
-	if (reply[1] == 0x0a) {
+	if (reply[1] == 0x0a || (reply[1] == 0x6e)) {
 		sr_dbg("Current limit %.03f A", current_limit);
 		sr_dbg("UVC threshold %.03f V", uvc_threshold);
-	}
-
-	/* Update load state. */
-	if (devc->load_activated && ebd_current_is0(devc)) {
-		ebd_loadtoggle(serial, devc);
-	} else if (!devc->load_activated && !ebd_current_is0(devc)) {
-		ebd_loadstart(serial, devc);
-	} else if (devc->load_activated &&
-		((current_limit != devc->current_limit) || (uvc_threshold != devc->uvc_threshold))) {
-
-		sr_dbg("Adjusting limit from %.03f A %.03f V to %.03f A %.03f V",
-			current_limit, uvc_threshold, devc->current_limit,
-			devc->uvc_threshold);
-		send_cfg(serial, devc);
 	}
 
 	/* Begin frame. */
@@ -378,11 +383,57 @@ SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data)
 	/* End frame. */
 	std_session_send_df_frame_end(sdi);
 
+	/* Send meta packets */
+	if (enabled != devc->enabled) {
+		devc->enabled = enabled;
+		sr_session_send_meta(sdi, SR_CONF_ENABLED,
+			g_variant_new_boolean(devc->enabled));
+	}
+	if (reply[1] == 0x0a || (reply[1] == 0x6e)) {
+		if (current_limit != devc->current_limit) {
+			devc->current_limit = current_limit;
+			sr_session_send_meta(sdi, SR_CONF_CURRENT_LIMIT,
+				g_variant_new_boolean(devc->current_limit));
+		}
+		if (uvc_threshold != devc->uvc_threshold) {
+			devc->uvc_threshold = uvc_threshold;
+			sr_session_send_meta(sdi, SR_CONF_UNDER_VOLTAGE_CONDITION_THRESHOLD,
+				g_variant_new_boolean(devc->uvc_threshold));
+		}
+	}
+
 	sr_sw_limits_update_samples_read(&devc->limits, 1);
 	if (sr_sw_limits_check(&devc->limits))
 		sr_dev_acquisition_stop(sdi);
 
 	return TRUE;
+}
+
+SR_PRIV int ebd_get_enabled(const struct sr_dev_inst *sdi, gboolean *enabled)
+{
+	struct dev_context *devc;
+
+	if (!(devc = sdi->priv))
+		return SR_ERR;
+
+	// g_mutex_lock(&devc->rw_mutex);
+	*enabled = devc->enabled;
+	// g_mutex_unlock(&devc->rw_mutex);
+
+	return SR_OK;
+}
+
+SR_PRIV int ebd_set_enabled(const struct sr_dev_inst *sdi, gboolean enable)
+{
+	struct dev_context *devc;
+
+	if (!(devc = sdi->priv))
+		return SR_ERR;
+
+	if (enable)
+		return ebd_loadstart(sdi->conn, devc);
+	else
+		return ebd_loadtoggle(sdi->conn, devc);
 }
 
 SR_PRIV int ebd_get_current_limit(const struct sr_dev_inst *sdi, float *current)
@@ -410,31 +461,8 @@ SR_PRIV int ebd_set_current_limit(const struct sr_dev_inst *sdi, float current)
 	// g_mutex_lock(&devc->rw_mutex);
 	devc->current_limit = current;
 
-	if (!devc->running) {
-		sr_dbg("Setting current limit later.");
-		// g_mutex_unlock(&devc->rw_mutex);
-		return SR_OK;
-	}
-
 	sr_dbg("Setting current limit to %fA.", current);
-
-	if (devc->load_activated) {
-		if (ebd_current_is0(devc)) {
-			/* Stop load. */
-			ret = ebd_loadtoggle(sdi->conn, devc);
-		} else {
-			/* Send new current. */
-			ret = send_cfg(sdi->conn, devc);
-		}
-	} else {
-		if (ebd_current_is0(devc)) {
-			/* Nothing to do. */
-			ret = SR_OK;
-		} else {
-			/* Start load. */
-			ret = ebd_loadstart(sdi->conn, devc);
-		}
-	}
+	ret = send_cfg(sdi->conn, devc);
 
 	// g_mutex_unlock(&devc->rw_mutex);
 
@@ -466,31 +494,8 @@ SR_PRIV int ebd_set_uvc_threshold(const struct sr_dev_inst *sdi, float voltage)
 	// g_mutex_lock(&devc->rw_mutex);
 	devc->uvc_threshold = voltage;
 
-	if (!devc->running) {
-		sr_dbg("Setting uvc threshold later.");
-		// g_mutex_unlock(&devc->rw_mutex);
-		return SR_OK;
-	}
-
 	sr_dbg("Setting uvc threshold to %fV.", voltage);
-
-	if (devc->load_activated) {
-		if (ebd_current_is0(devc)) {
-			/* Stop load. */
-			ret = ebd_loadtoggle(sdi->conn, devc);
-		} else {
-			/* Send new current. */
-			ret = send_cfg(sdi->conn, devc);
-		}
-	} else {
-		if (ebd_current_is0(devc)) {
-			/* Nothing to do. */
-			ret = SR_OK;
-		} else {
-			/* Start load. */
-			ret = ebd_loadstart(sdi->conn, devc);
-		}
-	}
+	ret = send_cfg(sdi->conn, devc);
 
 	// g_mutex_unlock(&devc->rw_mutex);
 

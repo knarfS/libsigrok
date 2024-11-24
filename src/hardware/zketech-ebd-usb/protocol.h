@@ -35,10 +35,10 @@
 struct dev_context {
 	struct sr_sw_limits limits;
 	//GMutex rw_mutex;
+	gboolean enabled;
 	float current_limit;
 	float uvc_threshold;
 	gboolean running;
-	gboolean load_activated;
 };
 
 /* Communication via serial. */
@@ -51,12 +51,14 @@ SR_PRIV int ebd_init(struct sr_serial_dev_inst *serial,
 SR_PRIV int ebd_loadstart(struct sr_serial_dev_inst *serial,
 	struct dev_context *devc);
 SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data);
-SR_PRIV int ebd_stop(struct sr_serial_dev_inst *serial,
+SR_PRIV int ebd_loadstop(struct sr_serial_dev_inst *serial,
 	struct dev_context *devc);
 SR_PRIV int ebd_loadtoggle(struct sr_serial_dev_inst *serial,
 	struct dev_context *devc);
 
 /* Configuration. */
+SR_PRIV int ebd_get_enabled(const struct sr_dev_inst *sdi, gboolean *enabled);
+SR_PRIV int ebd_set_enabled(const struct sr_dev_inst *sdi, gboolean enable);
 SR_PRIV int ebd_get_current_limit(const struct sr_dev_inst *sdi, float *current);
 SR_PRIV int ebd_set_current_limit(const struct sr_dev_inst *sdi, float current);
 SR_PRIV int ebd_get_uvc_threshold(const struct sr_dev_inst *sdi, float *voltage);

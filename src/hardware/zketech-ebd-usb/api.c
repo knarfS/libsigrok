@@ -32,9 +32,10 @@ static const uint32_t drvopts[] = {
 
 static const uint32_t devopts[] = {
 	SR_CONF_CONTINUOUS,
+	SR_CONF_LIMIT_SAMPLES | SR_CONF_GET | SR_CONF_SET,
+	SR_CONF_ENABLED | SR_CONF_SET | SR_CONF_SET,
 	SR_CONF_CURRENT_LIMIT | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_UNDER_VOLTAGE_CONDITION_THRESHOLD | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
-	SR_CONF_LIMIT_SAMPLES | SR_CONF_GET | SR_CONF_SET,
 };
 
 static GSList *scan(struct sr_dev_driver *di, GSList *options)
@@ -87,8 +88,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	// g_mutex_init(&devc->rw_mutex);
 	devc->current_limit = 0;
 	devc->uvc_threshold = 0;
-	devc->running = FALSE;
-	devc->load_activated = FALSE;
+	devc->enabled = FALSE;
 	sr_sw_limits_init(&devc->limits);
 	sdi->priv = devc;
 
@@ -102,7 +102,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 		sr_warn("No message received!");
 		ret = SR_ERR;
 	}
-	ebd_stop(serial, devc);
+	ebd_loadstop(serial, devc);
 
 	serial_close(serial);
 
@@ -129,6 +129,7 @@ static int config_get(uint32_t key, GVariant **data,
 	int ret;
 	struct dev_context *devc;
 	float fvalue;
+	gboolean bvalue;
 
 	(void)cg;
 
@@ -141,6 +142,11 @@ static int config_get(uint32_t key, GVariant **data,
 	case SR_CONF_LIMIT_SAMPLES:
 	case SR_CONF_LIMIT_MSEC:
 		return sr_sw_limits_config_get(&devc->limits, key, data);
+	case SR_CONF_ENABLED:
+		ret = ebd_get_enabled(sdi, &bvalue);
+		if (ret == SR_OK)
+			*data = g_variant_new_boolean(bvalue);
+		return ret;
 	case SR_CONF_CURRENT_LIMIT:
 		ret = ebd_get_current_limit(sdi, &fvalue);
 		if (ret == SR_OK)
@@ -159,7 +165,8 @@ static int config_get(uint32_t key, GVariant **data,
 static int config_set(uint32_t key, GVariant *data,
 	const struct sr_dev_inst *sdi, const struct sr_channel_group *cg)
 {
-	double value;
+	double dvalue;
+	gboolean bvalue;
 	struct dev_context *devc;
 
 	(void)data;
@@ -171,16 +178,19 @@ static int config_set(uint32_t key, GVariant *data,
 	case SR_CONF_LIMIT_MSEC:
 	case SR_CONF_LIMIT_SAMPLES:
 		return sr_sw_limits_config_set(&devc->limits, key, data);
+	case SR_CONF_ENABLED:
+		bvalue = g_variant_get_boolean(data);
+		return ebd_set_enabled(sdi, bvalue);
 	case SR_CONF_CURRENT_LIMIT:
-		value = g_variant_get_double(data);
-		if (value < 0.0 || value > 4.0)
+		dvalue = g_variant_get_double(data);
+		if (dvalue < 0.0 || dvalue > 4.0)
 			return SR_ERR_ARG;
-		return ebd_set_current_limit(sdi, value);
+		return ebd_set_current_limit(sdi, dvalue);
 	case SR_CONF_UNDER_VOLTAGE_CONDITION_THRESHOLD:
-		value = g_variant_get_double(data);
-		if (value < 0.0 || value > 21.0)
+		dvalue = g_variant_get_double(data);
+		if (dvalue < 0.0 || dvalue > 21.0)
 			return SR_ERR_ARG;
-		return ebd_set_uvc_threshold(sdi, value);
+		return ebd_set_uvc_threshold(sdi, dvalue);
 	default:
 		return SR_ERR_NA;
 	}
@@ -232,9 +242,9 @@ static int dev_acquisition_stop(struct sr_dev_inst *sdi)
 
 	if (sdi) {
 		devc = sdi->priv;
-		if (devc->load_activated)
+		if (devc->enabled)
 			ebd_loadtoggle(sdi->conn, devc);
-		ebd_stop(sdi->conn, devc);
+		ebd_loadstop(sdi->conn, devc);
 	}
 
 	return std_serial_dev_acquisition_stop(sdi);
