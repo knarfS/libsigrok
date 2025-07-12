@@ -145,6 +145,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	sdi->version = g_strdup(buf + 8);
 	sdi->inst_type = SR_INST_SERIAL;
 	sdi->conn = serial;
+	sdi->disable_default_mutex = TRUE;
 
 	cg = sr_channel_group_new(sdi, "1", NULL);
 
