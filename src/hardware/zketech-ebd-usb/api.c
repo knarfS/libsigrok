@@ -86,14 +86,15 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 
 	devc = g_malloc0(sizeof(struct dev_context));
 	// g_mutex_init(&devc->rw_mutex);
+	devc->enabled = FALSE;
 	devc->current_limit = 0;
 	devc->uvc_threshold = 0;
-	devc->enabled = FALSE;
+	devc->acquisition_running = FALSE;
 	sr_sw_limits_init(&devc->limits);
 	sdi->priv = devc;
 
 	/* Starting device. */
-	ebd_init(serial, devc);
+	ebd_start_measurement(serial, devc);
 	int ret = ebd_read_message(serial, MSG_MAX_LEN, reply);
 	if (ret < 0) {
 		sr_warn("Could not receive message!");
@@ -102,7 +103,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 		sr_warn("No message received!");
 		ret = SR_ERR;
 	}
-	ebd_loadstop(serial, devc);
+	ebd_stop_measurement(serial, devc);
 
 	serial_close(serial);
 
@@ -228,7 +229,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi)
 	sr_sw_limits_acquisition_start(&devc->limits);
 	std_session_send_df_header(sdi);
 
-	ebd_init(serial, devc);
+	ebd_start_measurement(serial, devc);
 
 	serial_source_add(sdi->session, serial, G_IO_IN, 100,
 		ebd_receive_data, (void *)sdi);
@@ -243,8 +244,8 @@ static int dev_acquisition_stop(struct sr_dev_inst *sdi)
 	if (sdi) {
 		devc = sdi->priv;
 		if (devc->enabled)
-			ebd_loadtoggle(sdi->conn, devc);
-		ebd_loadstop(sdi->conn, devc);
+			ebd_load_disable(sdi->conn, devc);
+		ebd_stop_measurement(sdi->conn, devc);
 	}
 
 	return std_serial_dev_acquisition_stop(sdi);

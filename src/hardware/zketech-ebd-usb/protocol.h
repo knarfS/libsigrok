@@ -38,7 +38,7 @@ struct dev_context {
 	gboolean enabled;
 	float current_limit;
 	float uvc_threshold;
-	gboolean running;
+	gboolean acquisition_running;
 };
 
 /* Communication via serial. */
@@ -46,15 +46,17 @@ SR_PRIV int ebd_read_message(struct sr_serial_dev_inst *serial, size_t length,
 	uint8_t *buf);
 
 /* Commands. */
-SR_PRIV int ebd_init(struct sr_serial_dev_inst *serial,
+SR_PRIV int ebd_start_measurement(struct sr_serial_dev_inst *serial,
 	struct dev_context *devc);
-SR_PRIV int ebd_loadstart(struct sr_serial_dev_inst *serial,
+SR_PRIV int ebd_stop_measurement(struct sr_serial_dev_inst *serial,
+	struct dev_context *devc);
+// TODO: rename to ebd_enable_load()
+SR_PRIV int ebd_load_enable(struct sr_serial_dev_inst *serial,
+	struct dev_context *devc);
+// TODO: rename to ebd_disable_load()
+SR_PRIV int ebd_load_disable(struct sr_serial_dev_inst *serial,
 	struct dev_context *devc);
 SR_PRIV int ebd_receive_data(int fd, int revents, void *cb_data);
-SR_PRIV int ebd_loadstop(struct sr_serial_dev_inst *serial,
-	struct dev_context *devc);
-SR_PRIV int ebd_loadtoggle(struct sr_serial_dev_inst *serial,
-	struct dev_context *devc);
 
 /* Configuration. */
 SR_PRIV int ebd_get_enabled(const struct sr_dev_inst *sdi, gboolean *enabled);
@@ -63,6 +65,5 @@ SR_PRIV int ebd_get_current_limit(const struct sr_dev_inst *sdi, float *current)
 SR_PRIV int ebd_set_current_limit(const struct sr_dev_inst *sdi, float current);
 SR_PRIV int ebd_get_uvc_threshold(const struct sr_dev_inst *sdi, float *voltage);
 SR_PRIV int ebd_set_uvc_threshold(const struct sr_dev_inst *sdi, float voltage);
-SR_PRIV gboolean ebd_current_is0(struct dev_context *devc);
 
 #endif

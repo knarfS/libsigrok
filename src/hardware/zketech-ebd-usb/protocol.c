@@ -54,6 +54,8 @@ static int send_cmd(struct sr_serial_dev_inst *serial, uint8_t buf[],
 		 */
 		g_usleep(10000);
 	}
+	sr_info("send_cmd(): return = %s", buf);
+	sr_info("send_cmd(): return count = %d, expected count = %zu", ret, count);
 
 	return (ret == (int)count) ? SR_OK : SR_ERR;
 }
@@ -88,62 +90,65 @@ static int send_cfg(struct sr_serial_dev_inst *serial, struct dev_context *devc)
 	return send_cmd(serial, send, 10);
 }
 
-/* Send the init/connect sequence; drive starts sending voltage and current. */
-SR_PRIV int ebd_init(struct sr_serial_dev_inst *serial, struct dev_context *devc)
-{
-	uint8_t init[] = { 0xfa, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0xf8 };
-
-	(void)devc;
-
-	return send_cmd(serial, init, 10);
-}
-
-/* Start the load functionality. */
-SR_PRIV int ebd_loadstart(struct sr_serial_dev_inst *serial,
-	struct dev_context *devc)
+/* Send the start sequence; drive starts sending voltage and current. */
+SR_PRIV int ebd_start_measurement(struct sr_serial_dev_inst* serial,
+	struct dev_context* devc)
 {
 	int ret;
+
+	uint8_t init[] = { 0xfa, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0xf8 };
+
+	sr_info("Starting measurement");
+	ret = send_cmd(serial, init, 10);
+
+	devc->acquisition_running = TRUE;
+
+	return ret;
+}
+
+/* Stop the measurement. */
+SR_PRIV int ebd_stop_measurement(struct sr_serial_dev_inst *serial, struct dev_context *devc)
+{
+	int ret;
+
+	uint8_t stop[] = { 0xfa, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0xF8 };
+
+	sr_info("Stopping measurement");
+	ret = send_cmd(serial, stop, 10);
+
+	devc->acquisition_running = FALSE;
+
+	return ret;
+}
+
+/* Enable the load functionality. */
+SR_PRIV int ebd_load_enable(struct sr_serial_dev_inst *serial,
+	struct dev_context *devc)
+{
 	uint8_t start[] = { 0xfa, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xf8 };
 
 	encode_value(devc->current_limit, &start[2], &start[3], 1000.0);
 	encode_value(devc->uvc_threshold, &start[4], &start[5], 100.0);
 
-	start[8] = start[1] ^ start[2] ^ start[3] ^ start[4] ^ start[5] ^ start[6] ^ start[7];
-
-	sr_info("Activating load");
-	ret = send_cmd(serial, start, 10);
-	if (ret)
-		return ret;
-
 	sr_dbg("current limit: %.03f", devc->current_limit);
 	sr_dbg("under-voltage threshold: %.02f", devc->uvc_threshold);
-	if (ebd_current_is0(devc))
-		return SR_OK;
 
-	return ret;
+	start[8] = start[1] ^ start[2] ^ start[3] ^ start[4] ^ start[5] ^ start[6] ^ start[7];
+
+	sr_info("Enabling load");
+	return send_cmd(serial, start, 10);
 }
 
-/* Toggle the load functionality. */
-SR_PRIV int ebd_loadtoggle(struct sr_serial_dev_inst *serial,
+/* Disable the load functionality. */
+SR_PRIV int ebd_load_disable(struct sr_serial_dev_inst *serial,
 	struct dev_context *devc)
 {
 	uint8_t toggle[] = { 0xfa, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xF8 };
 
 	(void)devc;
 
-	sr_info("Toggling load");
+	sr_info("Disabling load");
 	return send_cmd(serial, toggle, 10);
-}
-
-/* Stop the drive. */
-SR_PRIV int ebd_loadstop(struct sr_serial_dev_inst *serial, struct dev_context *devc)
-{
-	uint8_t stop[] = { 0xfa, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0xF8 };
-
-	(void)devc;
-
-	sr_info("Stopping load");
-	return send_cmd(serial, stop, 10);
 }
 
 /**
@@ -416,6 +421,12 @@ SR_PRIV int ebd_get_enabled(const struct sr_dev_inst *sdi, gboolean *enabled)
 	if (!(devc = sdi->priv))
 		return SR_ERR;
 
+	if (!devc->acquisition_running) {
+		ebd_start_measurement(sdi->conn, devc);
+		ebd_receive_data(-1, G_IO_IN, (void *)sdi);
+		ebd_stop_measurement(sdi->conn, devc);
+	}
+//
 	// g_mutex_lock(&devc->rw_mutex);
 	*enabled = devc->enabled;
 	// g_mutex_unlock(&devc->rw_mutex);
@@ -431,9 +442,9 @@ SR_PRIV int ebd_set_enabled(const struct sr_dev_inst *sdi, gboolean enable)
 		return SR_ERR;
 
 	if (enable)
-		return ebd_loadstart(sdi->conn, devc);
+		return ebd_load_enable(sdi->conn, devc);
 	else
-		return ebd_loadtoggle(sdi->conn, devc);
+		return ebd_load_disable(sdi->conn, devc);
 }
 
 SR_PRIV int ebd_get_current_limit(const struct sr_dev_inst *sdi, float *current)
@@ -442,6 +453,12 @@ SR_PRIV int ebd_get_current_limit(const struct sr_dev_inst *sdi, float *current)
 
 	if (!(devc = sdi->priv))
 		return SR_ERR;
+
+	if (!devc->acquisition_running) {
+		ebd_start_measurement(sdi->conn, devc);
+		ebd_receive_data(-1, G_IO_IN, (void *)sdi);
+		ebd_stop_measurement(sdi->conn, devc);
+	}
 
 	// g_mutex_lock(&devc->rw_mutex);
 	*current = devc->current_limit;
@@ -463,6 +480,8 @@ SR_PRIV int ebd_set_current_limit(const struct sr_dev_inst *sdi, float current)
 
 	sr_dbg("Setting current limit to %fA.", current);
 	ret = send_cfg(sdi->conn, devc);
+
+	sr_dbg("Setting current return %d", ret);
 
 	// g_mutex_unlock(&devc->rw_mutex);
 
@@ -500,9 +519,4 @@ SR_PRIV int ebd_set_uvc_threshold(const struct sr_dev_inst *sdi, float voltage)
 	// g_mutex_unlock(&devc->rw_mutex);
 
 	return ret;
-}
-
-SR_PRIV gboolean ebd_current_is0(struct dev_context *devc)
-{
-	return devc->current_limit < 0.001;
 }
